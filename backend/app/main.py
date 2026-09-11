@@ -9,6 +9,7 @@ enriched with real ingestion + risk-engine output.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -133,6 +134,56 @@ app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
+
+# ---------------------------------------------------------------------------
+# Packaged UI (Windows EXE / Docker) — optional static frontend serving
+# ---------------------------------------------------------------------------
+# The Next.js frontend can be built to static files (BUILD_STATIC_EXPORT=true)
+# and embedded next to the backend so ONE process serves both the UI and the
+# API on the same port. In normal development (repo checkout) this folder does
+# not exist and everything below is inert — dev workflow is unchanged.
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
+
+_STATIC_UI_DIR = Path(__file__).resolve().parent.parent / "static-ui"
+
+
+def _build_info() -> Dict[str, Any]:
+    """Build metadata for release traceability (no secrets)."""
+    version_file = _STATIC_UI_DIR.parent / "VERSION.json"
+    info: Dict[str, Any] = {
+        "version": os.environ.get("CYBERYUKTI_VERSION", "dev"),
+        "commit_sha": os.environ.get("CYBERYUKTI_COMMIT_SHA", "unknown"),
+        "build_timestamp": os.environ.get("CYBERYUKTI_BUILD_TIMESTAMP", "unknown"),
+        "environment": os.environ.get("CYBERYUKTI_ENV", "development"),
+    }
+    if version_file.exists():
+        try:
+            info.update(json.loads(version_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return info
+
+
+if _STATIC_UI_DIR.is_dir():
+    # Version/build info endpoint (see README — build/release process).
+    @app.get("/api/build-info", include_in_schema=False)
+    def build_info() -> Dict[str, Any]:
+        return _build_info()
+
+    @app.get("/", include_in_schema=False)
+    def packaged_ui_root():
+        """Serve the packaged UI shell instead of the API health JSON."""
+        index_file = _STATIC_UI_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        return JSONResponse({"app": "CyberYukti", "status": "online"})
+
+    # Static assets first (/_next/*), then HTML page routes with clean URLs.
+    app.mount("/_next", StaticFiles(directory=_STATIC_UI_DIR / "_next"), name="ui-assets")
+    app.mount("/", StaticFiles(directory=_STATIC_UI_DIR, html=True), name="packaged-ui")
 
 
 if __name__ == "__main__":

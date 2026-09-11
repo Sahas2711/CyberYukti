@@ -1,0 +1,47 @@
+# --- Version control / CI ---
+.git
+.github
+.gitignore
+.gitattributes
+
+# --- Python ---
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.venv
+venv
+# EXE build intermediates (must not leak into image / bundle)
+build
+dist
+*.spec
+
+# --- Node / Next.js ---
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/tsconfig.tsbuildinfo
+frontend/next-env.d.ts
+
+# UI build artifact is produced inside the image (stage 1)
+backend/static-ui
+backend/VERSION.json
+
+# --- Environments / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Docs / meta (not needed at runtime) ---
+docs
+branches_docs.md
+evidence-validation-engine-agent-prompt.md
+UI_AUDIT.md
+*.md
+!README.md
+
+# --- Docker / CI files themselves ---
+Dockerfile
+.dockerignore

@@ -34,6 +34,10 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# CyberYukti packaging build artifacts (recreated by CI)
+backend/static-ui/
+backend/VERSION.json
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -68,3 +72,4 @@ venv.bak/
 .DS_Store
 Thumbs.db
 desktop.ini
+backend/VERSION.json

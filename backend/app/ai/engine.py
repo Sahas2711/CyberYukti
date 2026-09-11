@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 
 from .provider import LLMProvider
 from .providers.mock_provider import MockProvider
-from .providers.openai_provider import OpenAIProvider
-from .providers.anthropic_provider import AnthropicProvider
 from .sanitizer import sanitize_case_for_llm
 from .schemas import AIAnalysis
 from .validator import validate_analysis
@@ -15,6 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def _get_provider() -> LLMProvider:
+    """Resolve the LLM provider from the environment.
+
+    The OpenAI/Anthropic SDKs are imported lazily so the packaged demo build
+    (USE_MOCK_AI=true) does not require or bundle them.
+    """
     use_mock = os.environ.get("USE_MOCK_AI", "true").lower() in ("true", "1", "yes")
     if use_mock:
         logger.info("Using mock AI provider (USE_MOCK_AI=true)")
@@ -23,8 +26,12 @@ def _get_provider() -> LLMProvider:
     provider_name = os.environ.get("AI_PROVIDER", "openai").lower()
     if provider_name == "anthropic":
         logger.info("Using Anthropic AI provider")
+        from .providers.anthropic_provider import AnthropicProvider
+
         return AnthropicProvider()
     logger.info("Using OpenAI AI provider")
+    from .providers.openai_provider import OpenAIProvider
+
     return OpenAIProvider()
 
 
