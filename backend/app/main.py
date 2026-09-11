@@ -35,10 +35,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS: explicit origins (fixes person1's wildcard + credentials combo)
+# CORS: allow localhost, 127.0.0.1, and [::1] on any port
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://[::1]:3000",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -137,12 +142,14 @@ from backend.app.api.approval_routes import router as approval_router  # noqa: E
 from backend.app.api.ai_routes import router as ai_router  # noqa: E402
 from backend.app.api.audit_routes import router as audit_router  # noqa: E402
 from backend.app.api.dashboard_routes import router as dashboard_router  # noqa: E402
+from backend.app.api.bulk_routes import router as bulk_router  # noqa: E402
 
 app.include_router(case_router, prefix="/api/cases", tags=["cases"])
 app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(bulk_router, prefix="/api/v1/scan", tags=["bulk-ingestion"])
 
 # ---------------------------------------------------------------------------
 # Evidence Validation Engine (Person 2)

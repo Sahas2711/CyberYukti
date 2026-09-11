@@ -1,0 +1,198 @@
+[
+  {
+    "title": "Remote Code Execution via Apache Log4j JNDI Lookup",
+    "severity": "CRITICAL",
+    "asset": "auth-service-prod:latest",
+    "cve": "CVE-2021-44228",
+    "cwe": "CWE-502",
+    "tool": "trivy",
+    "path": "pom.xml",
+    "package": "org.apache.logging.log4j:log4j-core",
+    "installed_version": "2.14.1",
+    "fixed_version": "2.17.1",
+    "description": "Unauthenticated RCE via LDAP JNDI lookup string in User-Agent header (Worker Node A)."
+  },
+  {
+    "title": "Remote Code Execution via Apache Log4j JNDI Lookup",
+    "severity": "CRITICAL",
+    "asset": "auth-service-prod:latest",
+    "cve": "CVE-2021-44228",
+    "cwe": "CWE-502",
+    "tool": "trivy",
+    "path": "pom.xml",
+    "package": "org.apache.logging.log4j:log4j-core",
+    "installed_version": "2.14.1",
+    "fixed_version": "2.17.1",
+    "description": "Exact duplicate scanner hit from Worker Node B (Stage 1 Exact Hash Dedup)."
+  },
+  {
+    "title": "Spring Framework RCE via Data Binding (Spring4Shell)",
+    "severity": "CRITICAL",
+    "asset": "order-service-api:v2",
+    "cve": "CVE-2022-22965",
+    "cwe": "CWE-94",
+    "tool": "trivy",
+    "path": "build.gradle",
+    "package": "org.springframework:spring-beans",
+    "installed_version": "5.3.17",
+    "fixed_version": "5.3.18",
+    "description": "Spring4Shell remote code execution in container runtime dependency."
+  },
+  {
+    "title": "Spring Framework RCE via Data Binding (Spring4Shell)",
+    "severity": "CRITICAL",
+    "asset": "order-service-api:v2",
+    "cve": "CVE-2022-22965",
+    "cwe": "CWE-94",
+    "tool": "semgrep",
+    "path": "services/order_controller.py",
+    "package": "org.springframework:spring-beans",
+    "description": "Spring MVC controller binding untrusted input (Stage 2 Triple-Tuple clustering with Trivy hit)."
+  },
+  {
+    "title": "Path Traversal in Static File Serving Controller",
+    "severity": "HIGH",
+    "asset": "frontend-proxy:v1",
+    "cwe": "CWE-22",
+    "tool": "semgrep",
+    "path": "handlers/static.py",
+    "line": 45,
+    "endpoint": "/api/static/download",
+    "description": "SAST finding: open() called with unsanitized file parameter."
+  },
+  {
+    "title": "Path Traversal in Static File Serving Controller",
+    "severity": "HIGH",
+    "asset": "frontend-proxy:v1",
+    "cwe": "CWE-22",
+    "tool": "nuclei",
+    "endpoint": "/api/static/download",
+    "description": "DAST probe confirmed arbitrary file read /etc/passwd (Stage 3 Cross-Tool Correlation)."
+  },
+  {
+    "title": "SQL Injection in Payment Search Parameter",
+    "severity": "HIGH",
+    "asset": "payment-gateway:v2.4",
+    "cwe": "CWE-89",
+    "tool": "semgrep",
+    "path": "repositories/payment.go",
+    "line": 142,
+    "endpoint": "/api/v2/payments/search",
+    "description": "SAST finding: Raw SQL query string formatting with user input."
+  },
+  {
+    "title": "SQL Injection in Payment Search Parameter",
+    "severity": "HIGH",
+    "asset": "payment-gateway:v2.4",
+    "cwe": "CWE-89",
+    "tool": "nuclei",
+    "endpoint": "/api/v2/payments/search",
+    "description": "DAST finding: Time-based blind SQL injection verified with sleep payload."
+  },
+  {
+    "title": "SQL Injection in User Profile Lookup",
+    "severity": "HIGH",
+    "asset": "user-service-prod:v1",
+    "cwe": "CWE-89",
+    "tool": "semgrep",
+    "path": "controllers/user.py",
+    "line": 56,
+    "endpoint": "/api/v1/users/profile",
+    "description": "Generic CWE-89 in distinct controller. MUST NOT be clustered with payment search."
+  },
+  {
+    "title": "Server-Side Request Forgery (SSRF) in Webhook Dispatcher",
+    "severity": "HIGH",
+    "asset": "notification-worker:v2",
+    "cve": "CVE-2023-38606",
+    "cwe": "CWE-918",
+    "tool": "nuclei",
+    "endpoint": "/api/v1/webhooks/test",
+    "description": "Active DAST DNS callback verified internal network scanning vulnerability."
+  },
+  {
+    "title": "Hardcoded Production JWT Signing Key",
+    "severity": "HIGH",
+    "asset": "auth-service-prod:latest",
+    "cwe": "CWE-798",
+    "tool": "semgrep",
+    "path": "auth/jwt_validator.ts",
+    "line": 18,
+    "description": "Hardcoded 256-bit HMAC secret constant detected in source code."
+  },
+  {
+    "title": "Insecure Deserialization in Redis Session Serializer",
+    "severity": "MEDIUM",
+    "asset": "session-store-cache:latest",
+    "cve": "CVE-2022-42889",
+    "cwe": "CWE-502",
+    "tool": "trivy",
+    "path": "pom.xml",
+    "package": "commons-text",
+    "installed_version": "1.9",
+    "fixed_version": "1.10.0",
+    "description": "Apache Commons Text remote code execution via script interpolation."
+  },
+  {
+    "title": "Cross-Site Scripting (Reflected XSS) in Audit Log Viewer",
+    "severity": "MEDIUM",
+    "asset": "customer-portal-frontend",
+    "cwe": "CWE-79",
+    "tool": "semgrep",
+    "path": "views/audit_viewer.tsx",
+    "line": 88,
+    "endpoint": "/portal/audit/logs",
+    "description": "SAST finding: Unescaped URL query parameter injected into React dangerousInnerHTML."
+  },
+  {
+    "title": "Cross-Site Scripting (Reflected XSS) in Audit Log Viewer",
+    "severity": "MEDIUM",
+    "asset": "customer-portal-frontend",
+    "cwe": "CWE-79",
+    "tool": "nuclei",
+    "endpoint": "/portal/audit/logs",
+    "description": "DAST finding: Injected HTML/script payload reflected in server HTTP response."
+  },
+  {
+    "title": "Prototype Pollution in follow-redirects",
+    "severity": "MEDIUM",
+    "asset": "customer-portal-frontend",
+    "cve": "CVE-2023-26159",
+    "cwe": "CWE-1321",
+    "tool": "trivy",
+    "path": "package-lock.json",
+    "package": "follow-redirects",
+    "installed_version": "1.15.1",
+    "fixed_version": "1.15.4",
+    "description": "Outdated dependency vulnerable to object prototype override."
+  },
+  {
+    "title": "CORS Misconfiguration Allowing Arbitrary Origin",
+    "severity": "LOW",
+    "asset": "k8s-ingress-controller",
+    "cwe": "CWE-346",
+    "tool": "nuclei",
+    "endpoint": "/api/v1/public/config",
+    "description": "Wildcard CORS origin reflection allowing cross-domain data access."
+  },
+  {
+    "title": "Verbose Stack Trace Information Leak",
+    "severity": "LOW",
+    "asset": "analytics-reporting-engine",
+    "cwe": "CWE-209",
+    "tool": "semgrep",
+    "path": "middleware/error_handler.py",
+    "line": 34,
+    "endpoint": "/api/health/diagnostics",
+    "description": "Internal database query trace exposed in 500 error response body."
+  },
+  {
+    "title": "TLS 1.0 and 1.1 Weak Protocol Version Supported",
+    "severity": "INFO",
+    "asset": "k8s-ingress-controller",
+    "cwe": "CWE-327",
+    "tool": "nuclei",
+    "endpoint": "https://ingress.cyberyukti.local",
+    "description": "Public listener negotiates deprecated TLS 1.0 and 1.1 cipher suites."
+  }
+]

@@ -2,39 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light Theme (Bright Enterprise Cyber Audit Mode) */
 :root {
-  --color-accent: #2dd4bf;
-  --color-accent-dim: #14b8a6;
-  --color-canvas: #0a0c10;
-  --color-graphite: #0f1216;
-  --color-graphite-raised: #12161c;
-  --color-priority-p1: #ef4444;
-  --color-priority-p2: #f97316;
-  --color-priority-p3: #eab308;
-  --color-priority-p4: #22c55e;
-  --color-evidence-confirmed: #22c55e;
-  --color-evidence-not-confirmed: #ef4444;
-  --color-evidence-inconclusive: #6b7280;
-  --color-bg-primary: #0a0c10;
-  --color-bg-secondary: #0f1216;
-  --color-bg-card: #11151a;
-  --color-text-primary: #e6e9ed;
-  --color-text-secondary: #98a0aa;
-  --color-border: #1f242c;
+  --color-canvas: #f8fafc;
+  --color-graphite-deep: #ffffff;
+  --color-graphite: #ffffff;
+  --color-graphite-raised: #f1f5f9;
+  --color-graphite-panel: #ffffff;
+  --color-line-faint: #f1f5f9;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-tx-primary: #0f172a;
+  --color-tx-secondary: #475569;
+  --color-tx-tertiary: #94a3b8;
+  --color-accent: #0284c7;
+  --color-accent-dim: #0369a1;
+  --color-accent-soft: rgba(2, 132, 199, 0.08);
+  --color-accent-glow: rgba(2, 132, 199, 0.2);
+
+  --color-priority-p1: #dc2626;
+  --color-priority-p2: #ea580c;
+  --color-priority-p3: #d97706;
+  --color-priority-p4: #16a34a;
+  --color-evidence-confirmed: #16a34a;
+  --color-evidence-not-confirmed: #dc2626;
+  --color-evidence-inconclusive: #64748b;
+}
+
+/* Dark Theme (Default Threat Operations SOC Command Mode) */
+.dark {
+  --color-canvas: #06080d;
+  --color-graphite-deep: #0a0e16;
+  --color-graphite: #0c1017;
+  --color-graphite-raised: #10151f;
+  --color-graphite-panel: #0e131c;
+  --color-line-faint: #141a24;
+  --color-line: #1c2433;
+  --color-line-strong: #273347;
+  --color-tx-primary: #f1f5f9;
+  --color-tx-secondary: #94a3b8;
+  --color-tx-tertiary: #64748b;
+  --color-accent: #06b6d4;
+  --color-accent-dim: #0891b2;
+  --color-accent-soft: rgba(6, 182, 212, 0.12);
+  --color-accent-glow: rgba(6, 182, 212, 0.35);
+
+  --color-priority-p1: #f43f5e;
+  --color-priority-p2: #fb923c;
+  --color-priority-p3: #fbbf24;
+  --color-priority-p4: #34d399;
+  --color-evidence-confirmed: #10b981;
+  --color-evidence-not-confirmed: #f43f5e;
+  --color-evidence-inconclusive: #94a3b8;
 }
 
 @layer base {
   html {
-    color-scheme: dark;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   body {
-    @apply bg-canvas text-tx-primary antialiased;
+    background-color: var(--color-canvas);
+    color: var(--color-tx-primary);
     font-family: theme("fontFamily.sans");
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
   }
 
   ::selection {
-    background: rgba(45, 212, 191, 0.28);
+    background: var(--color-accent);
     color: #ffffff;
   }
 
@@ -53,17 +90,50 @@
 }
 
 @layer components {
-  /* Uppercase micro-label used across panels and headers */
+  /* Tactical micro-label */
   .hk-label {
-    @apply font-mono text-[11px] uppercase tracking-[0.14em] text-tx-tertiary;
+    @apply font-mono text-[10px] uppercase tracking-[0.16em] text-tx-tertiary;
+  }
+
+  /* Cyber glass panel */
+  .cyber-panel {
+    background-color: var(--color-graphite);
+    border: 1px solid var(--color-line);
+    border-radius: 6px;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+  }
+  .dark .cyber-panel {
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+  }
+  .cyber-panel:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  /* Cyber Glow effect */
+  .cyber-glow {
+    box-shadow: 0 0 15px -3px var(--color-accent-glow);
+  }
+
+  /* Cyber Grid background utility */
+  .cyber-grid-bg {
+    background-size: 24px 24px;
+    background-image: 
+      linear-gradient(to right, rgba(120, 140, 180, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(120, 140, 180, 0.05) 1px, transparent 1px);
+  }
+  .dark .cyber-grid-bg {
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   }
 
   /* Skeleton loading shimmer */
   .skeleton {
     position: relative;
     overflow: hidden;
-    border-radius: 3px;
-    background: #14181f;
+    border-radius: 4px;
+    background: var(--color-graphite-raised);
   }
   .skeleton::after {
     content: "";
@@ -72,7 +142,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.08),
       transparent
     );
     transform: translateX(-100%);
@@ -89,22 +159,20 @@
 /* Thin, quiet scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2a303a transparent;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #2a303a;
+  background: var(--color-line-strong);
   border: 2px solid transparent;
   background-clip: padding-box;
   border-radius: 8px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #333b47;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: var(--color-tx-tertiary);
 }
 *::-webkit-scrollbar-track {
   background: transparent;

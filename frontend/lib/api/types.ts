@@ -134,3 +134,44 @@ export interface IngestionCluster {
     fixed_version?: string | null;
   };
 }
+
+export interface BulkPipelineSummary {
+  pipeline_name: string;
+  total_raw_findings: number;
+  total_clusters: number;
+  noise_reduction_percentage: number;
+  execution_time_ms: number;
+  total_assets_covered: number;
+  cross_tool_correlated_count: number;
+  breakdown_by_tool: Record<string, number>;
+  breakdown_by_severity: Record<string, number>;
+  breakdown_by_priority: Record<string, number>;
+  breakdown_by_scan_type: Record<string, number>;
+}
+
+export interface ScoredClusterItem {
+  cluster_id: string;
+  title: string;
+  primary_cve?: string | null;
+  root_cause_cwe?: string | null;
+  target_asset: string;
+  affected_component: string;
+  normalized_route?: string | null;
+  raw_findings_count: number;
+  participating_tools: string[];
+  representative_severity: string;
+  priority: "P1" | "P2" | "P3" | "P4";
+  final_score: number;
+  sla: string;
+  factors: Record<string, number>;
+  reasons?: string[];
+}
+
+export interface BulkExactReportResponse {
+  status: string;
+  summary: BulkPipelineSummary;
+  clusters_sample: ScoredClusterItem[];
+  all_clusters_count: number;
+  top_actionable_p1_p2: ScoredClusterItem[];
+}
+

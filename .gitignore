@@ -68,3 +68,12 @@ venv.bak/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+.next/
+*.tsbuildinfo
+*.log
+

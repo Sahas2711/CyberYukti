@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  cyberyukti:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cyberyukti:latest
+    container_name: cyberyukti-platform
+    ports:
+      - "8000:8000"
+      - "3000:3000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

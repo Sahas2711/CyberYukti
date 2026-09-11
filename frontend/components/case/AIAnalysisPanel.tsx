@@ -46,9 +46,21 @@ export function AIAnalysisPanel({ analysis, onAnalyze, loading }: Props) {
             AI-generated explanation — supports, never replaces, the analyst decision
           </p>
         </div>
-        <span className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[3px] text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-          AI-generated
-        </span>
+        <div className="flex items-center gap-2">
+          {analysis && (
+            <button
+              type="button"
+              onClick={onAnalyze}
+              disabled={loading}
+              className="rounded-sm border border-accent/40 bg-accent-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+            >
+              {loading ? "Re-analyzing..." : "Re-run analysis"}
+            </button>
+          )}
+          <span className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[3px] text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+            AI-generated
+          </span>
+        </div>
       </header>
 
       {loading ? (

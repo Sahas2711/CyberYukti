@@ -8,17 +8,17 @@ router = APIRouter()
 @router.get("/stats")
 async def get_dashboard_stats():
     cases = get_cases()
-    total_findings = sum(c["finding_count"] for c in cases)
+    total_findings = sum(c.get("finding_count", 1) for c in cases)
     unique_clusters = len(cases)
 
-    confirmed = sum(1 for c in cases if c["evidence"]["status"] == "CONFIRMED")
-    not_confirmed = sum(1 for c in cases if c["evidence"]["status"] == "NOT_CONFIRMED")
-    inconclusive = sum(1 for c in cases if c["evidence"]["status"] == "INCONCLUSIVE")
+    confirmed = sum(1 for c in cases if (c.get("evidence") or {}).get("status") == "CONFIRMED")
+    not_confirmed = sum(1 for c in cases if (c.get("evidence") or {}).get("status") == "NOT_CONFIRMED")
+    inconclusive = sum(1 for c in cases if (c.get("evidence") or {}).get("status") == "INCONCLUSIVE")
 
-    p1 = sum(1 for c in cases if c["priority"]["level"] == "P1")
-    p2 = sum(1 for c in cases if c["priority"]["level"] == "P2")
-    p3 = sum(1 for c in cases if c["priority"]["level"] == "P3")
-    p4 = sum(1 for c in cases if c["priority"]["level"] == "P4")
+    p1 = sum(1 for c in cases if (c.get("priority") or {}).get("level") == "P1")
+    p2 = sum(1 for c in cases if (c.get("priority") or {}).get("level") == "P2")
+    p3 = sum(1 for c in cases if (c.get("priority") or {}).get("level") == "P3")
+    p4 = sum(1 for c in cases if (c.get("priority") or {}).get("level") == "P4")
 
     stats = {
         "total_findings": total_findings,

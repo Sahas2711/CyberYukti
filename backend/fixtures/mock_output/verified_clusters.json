@@ -15,7 +15,7 @@
       "title": "[Correlated SAST+DAST] Path Traversal in /api/static/download (CVE-2023-38606)",
       "primary_cve": "CVE-2023-38606",
       "root_cause_cwe": "CWE-22",
-      "target_asset": "cyberyukti-target:v1.2",
+      "target_asset": "cyberyukti-target",
       "affected_component": "/api/static/download",
       "normalized_route": "/api/static/download",
       "raw_findings_count": 11,
@@ -24,20 +24,20 @@
         "semgrep"
       ],
       "underlying_finding_ids": [
-        "00a95b7cf627e706",
-        "194a620c6eeb7832",
-        "4515cef0394440a1",
-        "4527ccc05e4b0d61",
-        "7c832e979636632a",
-        "9088a261bb98e64e",
-        "95aebf02f645e46d",
-        "985f90902afadae7",
-        "bda643bb8b729291",
-        "cd224b8cefbb0066",
-        "d3eed45a33d69ab3"
+        "010a338e8d554d1e",
+        "215cfdcac5673faa",
+        "2de4809864976ecb",
+        "4de79c859636ceec",
+        "a27e9434ef44b499",
+        "ad5fc6926ef575e9",
+        "afcfce2a06b7e604",
+        "bb5c91a6955f834b",
+        "e37fcc476069c2e7",
+        "e384a5551c165e4a",
+        "e52834be1dcdb146"
       ],
       "representative_finding": {
-        "finding_id": "95aebf02f645e46d",
+        "finding_id": "010a338e8d554d1e",
         "tool_name": "nuclei",
         "scan_type": "dast",
         "title": "Generic Path Traversal - Arbitrary File Read",
@@ -47,7 +47,7 @@
           "CWE-22"
         ],
         "raw_severity": "HIGH",
-        "target_asset": "cyberyukti-target:v1.2",
+        "target_asset": "cyberyukti-target",
         "file_path": null,
         "line_number": null,
         "http_endpoint": "/api/static/download",
@@ -83,7 +83,7 @@
       "title": "[Correlated SAST+DAST] Improper Authentication in /api/admin/auth",
       "primary_cve": null,
       "root_cause_cwe": "CWE-287",
-      "target_asset": "cyberyukti-target:v1.2",
+      "target_asset": "cyberyukti-target",
       "affected_component": "/api/admin/auth",
       "normalized_route": "/api/admin/auth",
       "raw_findings_count": 6,
@@ -92,15 +92,15 @@
         "semgrep"
       ],
       "underlying_finding_ids": [
-        "14afb74285441fbb",
-        "210b36c7cbcfd973",
-        "218011838d13fd7d",
-        "28dbf89d778ef09f",
-        "98868dd0409f61bb",
-        "de7bc150b552a0a3"
+        "0171dfd632c3da29",
+        "30f3f6694dde34f6",
+        "3cf59f62242933cf",
+        "953e743f4e02b17f",
+        "a2b42045175b3c0c",
+        "e12e0563dabdaa23"
       ],
       "representative_finding": {
-        "finding_id": "14afb74285441fbb",
+        "finding_id": "e12e0563dabdaa23",
         "tool_name": "nuclei",
         "scan_type": "dast",
         "title": "Administrative API Endpoint Authentication Bypass",
@@ -110,7 +110,7 @@
           "CWE-287"
         ],
         "raw_severity": "HIGH",
-        "target_asset": "cyberyukti-target:v1.2",
+        "target_asset": "cyberyukti-target",
         "file_path": null,
         "line_number": null,
         "http_endpoint": "/api/admin/auth",

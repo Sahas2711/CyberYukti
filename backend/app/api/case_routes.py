@@ -20,10 +20,18 @@ async def list_cases(
 ):
     cases = get_cases()
     if priority:
-        cases = [c for c in cases if c["priority"]["level"] == priority.upper()]
+        cases = [c for c in cases if (c.get("priority") or {}).get("level") == priority.upper()]
     if status:
-        cases = [c for c in cases if c["approval"]["status"] == status.upper()]
+        cases = [c for c in cases if (c.get("approval") or {}).get("status") == status.upper()]
     return cases
+
+
+@router.post("")
+async def create_case_route(payload: dict):
+    """Report or ingest a new vulnerability case into the triage engine."""
+    from backend.app.store import create_vulnerability_case
+    new_case = create_vulnerability_case(payload)
+    return new_case
 
 
 @router.get("/clusters/all")
