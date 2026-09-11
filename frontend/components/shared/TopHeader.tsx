@@ -29,6 +29,7 @@ export function TopHeader() {
   const { theme, toggleTheme } = useTheme();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isPlaybookOpen, setIsPlaybookOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-line bg-graphite-raised/95 backdrop-blur-md px-5 lg:px-6 transition-colors">
@@ -190,12 +191,73 @@ export function TopHeader() {
 
         <span className="hidden h-4 w-px bg-line-strong sm:block" aria-hidden="true" />
         
-        {/* Analyst Identity */}
-        <div className="hidden items-center gap-1.5 sm:flex">
-          <span className="hk-label">Analyst</span>
-          <span className="font-mono text-xs font-semibold text-tx-secondary bg-graphite border border-line px-1.5 py-0.5 rounded">
-            analyst-1
-          </span>
+        {/* User Profile Avatar with Popover */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen((prev) => !prev)}
+            onBlur={() => setTimeout(() => setUserMenuOpen(false), 200)}
+            className="group flex items-center gap-2 rounded-full border border-line bg-graphite p-1 pr-2.5 hover:border-accent/50 hover:bg-accent-soft transition-all focus:outline-none"
+            aria-label="User Profile"
+            title="Active Analyst: analyst-1 (Lead SOC Triage)"
+          >
+            <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-accent/15 border border-accent/30 text-accent group-hover:border-accent transition-colors">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-graphite" />
+            </div>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-[11px] font-bold text-tx-primary leading-none">
+                analyst-1
+              </span>
+              <span className="text-[9px] font-mono uppercase text-accent font-semibold leading-none mt-0.5">
+                SOC Lead
+              </span>
+            </div>
+            <svg className="hidden sm:block h-3 w-3 text-tx-tertiary group-hover:text-tx-primary transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+
+          {/* User Popover Menu */}
+          {userMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-line bg-graphite p-3.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3 pb-3 border-b border-line">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/20 border border-accent/40 text-accent font-bold">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-tx-primary">Alex Mercer</h4>
+                  <p className="text-[10.5px] font-mono text-accent">@analyst-1 (Lead)</p>
+                </div>
+              </div>
+              <div className="py-2.5 space-y-1.5 text-[11px] text-tx-secondary">
+                <div className="flex justify-between">
+                  <span className="hk-label text-[9.5px]">Clearance</span>
+                  <span className="font-semibold text-emerald-500 dark:text-emerald-400">Level 3 (Commander)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="hk-label text-[9.5px]">Attestation Seal</span>
+                  <span className="font-mono text-[10px] text-tx-primary">HMAC-SHA256 Ready</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="hk-label text-[9.5px]">Active Session</span>
+                  <span className="flex items-center gap-1 text-emerald-500 text-[10px]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Online (Verified)
+                  </span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-line">
+                <span className="text-[9.5px] font-mono uppercase tracking-wider text-tx-tertiary block text-center">
+                  ISO-27001 / SOC-2 Audited Role
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
