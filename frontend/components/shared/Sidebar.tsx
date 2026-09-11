@@ -109,7 +109,7 @@ export function Sidebar() {
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 border border-accent/30 text-accent font-black shadow-sm shadow-accent/20">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <svg width="16" height="16" style={{ maxWidth: 20, maxHeight: 20 }} className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-2.33v8.02z" />
             </svg>
           </div>
