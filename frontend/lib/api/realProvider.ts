@@ -47,6 +47,17 @@ export function createRealProvider(): Provider {
       }
     },
 
+    async validateCase(id: string, targetOverride?: string): Promise<TriageCase> {
+      try {
+        const query = targetOverride ? `?target_override=${encodeURIComponent(targetOverride)}` : "";
+        return await apiFetch<TriageCase>(`/api/cases/${id}/validate${query}`, {
+          method: "POST",
+        });
+      } catch (err) {
+        throw describeError(err);
+      }
+    },
+
     async analyzeCase(id: string): Promise<AIAnalysis> {
       try {
         return await apiFetch<AIAnalysis>(`/api/ai/analyze/${id}`, { method: "POST" });

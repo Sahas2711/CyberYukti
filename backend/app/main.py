@@ -8,7 +8,7 @@ All routes operate on a single shared store seeded from fixtures and
 enriched with real ingestion + risk-engine output.
 """
 
-import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -21,10 +21,18 @@ from backend.app.store import init_store, get_pipeline_meta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_store()
+    yield
+
+
 app = FastAPI(
     title="CyberYukti API",
     description="Autonomous Vulnerability Triage & Evidence Engine (PS16)",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # CORS: explicit origins (fixes person1's wildcard + credentials combo)
@@ -35,11 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    init_store()
 
 
 @app.get("/")
@@ -53,6 +56,13 @@ def read_root():
         "pipeline_source": meta.get("source"),
         "docs_url": "/docs",
     }
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "cyberyukti-backend"}
+
 
 
 # ---------------------------------------------------------------------------
@@ -133,6 +143,20 @@ app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
+# ---------------------------------------------------------------------------
+# Evidence Validation Engine (Person 2)
+# ---------------------------------------------------------------------------
+import sys
+EE_PATH = BASE_DIR / "services" / "evidence-engine"
+if str(EE_PATH) not in sys.path:
+    sys.path.insert(0, str(EE_PATH))
+
+try:
+    from api.server import app as evidence_engine_app
+    app.mount("/api/evidence-engine", evidence_engine_app)
+except Exception:
+    pass
 
 
 if __name__ == "__main__":

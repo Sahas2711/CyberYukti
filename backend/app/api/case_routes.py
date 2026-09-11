@@ -7,6 +7,7 @@ from backend.app.store import (
     get_cases,
     get_clusters,
     ensure_audit,
+    validate_case_live,
 )
 
 router = APIRouter()
@@ -34,6 +35,21 @@ async def list_clusters():
 @router.get("/{case_id}")
 async def get_case_route(case_id: str):
     case = get_case(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    case["audit"] = ensure_audit(case_id)
+    return case
+
+
+@router.post("/{case_id}/validate")
+async def validate_case_route(
+    case_id: str,
+    target_override: Optional[str] = Query(None, description="Optional lab asset ID override (e.g. shop-api-01, shop-api-01-patched)"),
+):
+    """Execute live non-destructive validation probe against controlled lab target,
+    updating evidence observations and recalculating risk priority.
+    """
+    case = validate_case_live(case_id, target_override)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     case["audit"] = ensure_audit(case_id)
