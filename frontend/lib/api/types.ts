@@ -88,6 +88,15 @@ export interface TriageCase {
   ai_analysis: AIAnalysis | null;
   approval: ApprovalState;
   audit: AuditEvent[];
+  cost_burn?: {
+    hourly_burn: number;
+    daily_burn: number;
+    formatted_hourly: string;
+    formatted_daily: string;
+    accrued_burn: number;
+    formatted_accrued: string;
+    sla_window_hours: number;
+  };
 }
 
 export interface DashboardStats {
@@ -101,6 +110,72 @@ export interface DashboardStats {
   p3: number;
   p4: number;
   ingestion?: IngestionSummary;
+  liability_burn?: {
+    daily_burn: number;
+    accrued_liability: number;
+    formatted_daily: string;
+    formatted_accrued: string;
+  };
+}
+
+export interface AttestationReceipt {
+  certificate_id: string;
+  case_id: string;
+  cluster_id: string;
+  title: string;
+  issuer: string;
+  issued_at: string;
+  digital_signature: string;
+  merkle_root: string;
+  leaves: {
+    scanner_evidence_hash: string;
+    probe_execution_hash: string;
+    risk_scoring_hash: string;
+    analyst_signature_hash: string;
+  };
+  merkle_tree: {
+    leaf_count: number;
+    tree_depth: number;
+    root: string;
+  };
+  state_transitions: Array<{
+    step: number;
+    name: string;
+    hash: string;
+    summary: string;
+    data: Record<string, unknown>;
+  }>;
+  compliance_notes: string[];
+}
+
+export interface AttestationVerificationResult {
+  valid: boolean;
+  merkle_root_matches?: boolean;
+  digital_signature_matches?: boolean;
+  computed_merkle_root?: string;
+  expected_merkle_root?: string;
+  verified_at?: string;
+  status?: string;
+  reason?: string;
+}
+
+export interface RemediationPlaybook {
+  case_id: string;
+  cluster_id: string;
+  title: string;
+  cve: string;
+  cwe: string;
+  priority: string;
+  target_asset: string;
+  daily_burn: string;
+  root_cause: string;
+  virtual_patch_waf: string;
+  permanent_code_patch: string;
+  verification_probe: string;
+  expected_verification: string;
+  estimated_hours: number;
+  liability_saved_usd: number;
+  formatted_savings: string;
 }
 
 export interface IngestionSummary {

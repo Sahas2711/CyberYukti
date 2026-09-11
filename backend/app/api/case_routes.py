@@ -9,6 +9,10 @@ from backend.app.store import (
     ensure_audit,
     validate_case_live,
 )
+from backend.app.remediation import (
+    get_top_p1_remediation_playbooks,
+    get_remediation_for_case,
+)
 
 router = APIRouter()
 
@@ -40,6 +44,13 @@ async def list_clusters():
     return get_clusters()
 
 
+@router.get("/remediation/top10")
+async def get_top10_remediation():
+    """Returns prioritized remediation playbooks for top P1 critical vulnerabilities."""
+    cases = get_cases()
+    return get_top_p1_remediation_playbooks(cases, limit=10)
+
+
 @router.get("/{case_id}")
 async def get_case_route(case_id: str):
     case = get_case(case_id)
@@ -47,6 +58,15 @@ async def get_case_route(case_id: str):
         raise HTTPException(status_code=404, detail="Case not found")
     case["audit"] = ensure_audit(case_id)
     return case
+
+
+@router.get("/{case_id}/remediation")
+async def get_case_remediation_route(case_id: str):
+    """Returns specific remediation playbook and fix guidance for a given case."""
+    case = get_case(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return get_remediation_for_case(case)
 
 
 @router.post("/{case_id}/validate")

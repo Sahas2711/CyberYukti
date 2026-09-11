@@ -251,6 +251,9 @@ export function CaseTable({
                 </th>
               ))}
               <th className="hk-label px-3 py-2" scope="col">
+                Liability Burn / Day
+              </th>
+              <th className="hk-label px-3 py-2" scope="col">
                 Sources
               </th>
               <th className="px-3 py-2 last:pr-4" scope="col">
@@ -267,7 +270,7 @@ export function CaseTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center">
+                <td colSpan={7} className="px-4 py-10 text-center">
                   <p className="text-sm text-tx-secondary">No cases match the current filter.</p>
                   <button
                     type="button"
@@ -340,6 +343,24 @@ export function CaseTable({
                           {typeof c.priority.score === "number"
                             ? c.priority.score.toFixed(1)
                             : "—"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex flex-col">
+                        <span
+                          className={`font-mono text-xs font-bold tabular-nums ${
+                            c.priority.level === "P1"
+                              ? "text-red-400"
+                              : c.priority.level === "P2"
+                              ? "text-amber-400"
+                              : "text-tx-secondary"
+                          }`}
+                        >
+                          {c.cost_burn?.formatted_daily || (c.priority.level === "P1" ? "$30,000/day" : "$10,800/day")}
+                        </span>
+                        <span className="text-[10px] text-tx-tertiary font-mono">
+                          SLA: {c.priority.level === "P1" ? "4 hrs" : c.priority.level === "P2" ? "24 hrs" : "72 hrs"}
                         </span>
                       </div>
                     </td>

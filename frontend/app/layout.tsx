@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/shared/Sidebar";
 import { TopHeader } from "@/components/shared/TopHeader";
 import { ThemeProvider } from "@/lib/ThemeContext";
+import { ChatBotWidget } from "@/components/ai/ChatBotWidget";
 
 export const metadata: Metadata = {
   title: "CyberYukti — Autonomous Vulnerability Triage & Evidence Engine",
@@ -30,6 +31,9 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
             </div>
           </div>
+          <Suspense fallback={null}>
+            <ChatBotWidget />
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

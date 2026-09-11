@@ -20,6 +20,18 @@ async def get_dashboard_stats():
     p3 = sum(1 for c in cases if (c.get("priority") or {}).get("level") == "P3")
     p4 = sum(1 for c in cases if (c.get("priority") or {}).get("level") == "P4")
 
+    # Financial Liability Cost Burn metrics
+    daily_liability_burn = sum(
+        float((c.get("cost_burn") or {}).get("daily_burn", 0.0))
+        for c in cases
+        if (c.get("approval") or {}).get("status") != "RESOLVED"
+    )
+    accrued_liability = sum(
+        float((c.get("cost_burn") or {}).get("accrued_burn", 0.0))
+        for c in cases
+        if (c.get("approval") or {}).get("status") != "RESOLVED"
+    )
+
     stats = {
         "total_findings": total_findings,
         "unique_clusters": unique_clusters,
@@ -30,6 +42,12 @@ async def get_dashboard_stats():
         "p2": p2,
         "p3": p3,
         "p4": p4,
+        "liability_burn": {
+            "daily_burn": round(daily_liability_burn, 2),
+            "accrued_liability": round(accrued_liability, 2),
+            "formatted_daily": f"${daily_liability_burn:,.0f}/day",
+            "formatted_accrued": f"${accrued_liability:,.0f}",
+        },
     }
     meta = get_pipeline_meta()
     if meta.get("summary"):

@@ -188,6 +188,49 @@ def _normalize_env(env: Any) -> str:
     return mapping.get(str(env).lower(), "unknown")
 
 
+def compute_cost_burn(case: dict) -> dict:
+    """Calculates financial liability burn rate ($/hour and $/day) and accrued liability.
+
+    Formula combines:
+    - Base SLA rate by priority (P1: $1,250/hr, P2: $450/hr, P3: $120/hr, P4: $25/hr)
+    - Asset criticality multiplier (1.0x - 1.5x)
+    - Internet exposure multiplier (1.3x)
+    - Active CISA KEV exploitation multiplier (1.4x)
+    """
+    priority_level = (case.get("priority") or {}).get("level", "P2").upper()
+    asset = case.get("asset") or {}
+    threat_intel = case.get("threat_intelligence") or {}
+
+    base_rates = {
+        "P1": 1250.0,
+        "P2": 450.0,
+        "P3": 120.0,
+        "P4": 25.0,
+    }
+    base_rate = base_rates.get(priority_level, 450.0)
+
+    crit_str = str(asset.get("criticality", "medium")).lower()
+    crit_mults = {"critical": 1.5, "high": 1.25, "medium": 1.0, "low": 0.7}
+    crit_mult = crit_mults.get(crit_str, 1.0)
+
+    exposed_mult = 1.3 if asset.get("internet_exposed") else 1.0
+    kev_mult = 1.4 if threat_intel.get("cisa_kev") else 1.0
+
+    hourly_burn = round(base_rate * crit_mult * exposed_mult * kev_mult, 2)
+    daily_burn = round(hourly_burn * 24, 2)
+    accrued_burn = round(hourly_burn * 36, 2)
+
+    return {
+        "hourly_burn": hourly_burn,
+        "daily_burn": daily_burn,
+        "formatted_hourly": f"${hourly_burn:,.0f}/hr",
+        "formatted_daily": f"${daily_burn:,.0f}/day",
+        "accrued_burn": accrued_burn,
+        "formatted_accrued": f"${accrued_burn:,.0f}",
+        "sla_window_hours": 4 if priority_level == "P1" else (24 if priority_level == "P2" else 72),
+    }
+
+
 def init_store() -> None:
     """Hydrate the store from fixtures, then enrich with real pipeline data."""
     with _LOCK:
@@ -198,6 +241,8 @@ def init_store() -> None:
             _cases_store[case["case_id"] if isinstance(case, dict) else case.case_id] = dumped
         _apply_ingestion_clusters()
         _recompute_priorities()
+        for case in _cases_store.values():
+            case["cost_burn"] = compute_cost_burn(case)
 
 
 def ensure_audit(case_id: str) -> List[dict]:
@@ -238,12 +283,18 @@ def add_audit_event(
 
 def get_cases() -> List[dict]:
     with _LOCK:
+        for case in _cases_store.values():
+            if "cost_burn" not in case:
+                case["cost_burn"] = compute_cost_burn(case)
         return list(_cases_store.values())
 
 
 def get_case(case_id: str) -> Optional[dict]:
     with _LOCK:
-        return _cases_store.get(case_id)
+        case = _cases_store.get(case_id)
+        if case and "cost_burn" not in case:
+            case["cost_burn"] = compute_cost_burn(case)
+        return case
 
 
 def get_pipeline_meta() -> Dict[str, Any]:
@@ -274,6 +325,7 @@ def validate_case_live(case_id: str, target_override: Optional[str] = None) -> O
 
         # Recalculate priority dynamically based on fresh evidence status
         _recompute_priorities()
+        case["cost_burn"] = compute_cost_burn(case)
 
         # Record audit event
         add_audit_event(
@@ -416,6 +468,7 @@ def create_vulnerability_case(payload: dict) -> dict:
             "updated_at": _now_iso(),
         }
 
+        new_case["cost_burn"] = compute_cost_burn(new_case)
         _cases_store[case_id] = new_case
         _audit_store[case_id] = new_case["audit"]
         return new_case
@@ -490,6 +543,7 @@ def sync_bulk_clusters(clusters: List[Any], scored_clusters: List[dict], summary
                 "created_at": _now_iso(),
                 "updated_at": _now_iso(),
             }
+            new_case["cost_burn"] = compute_cost_burn(new_case)
             _cases_store[cid] = new_case
             _audit_store[cid] = []
 

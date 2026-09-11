@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/lib/ThemeContext";
+import { UserGuideModal } from "@/components/shared/UserGuideModal";
+import { RemediationPlaybookModal } from "@/components/dashboard/RemediationPlaybookModal";
 
 const isMock = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
@@ -24,6 +27,8 @@ export function TopHeader() {
   const pathname = usePathname();
   const crumbs = crumbPath(pathname);
   const { theme, toggleTheme } = useTheme();
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isPlaybookOpen, setIsPlaybookOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-line bg-graphite-raised/95 backdrop-blur-md px-5 lg:px-6 transition-colors">
@@ -80,6 +85,26 @@ export function TopHeader() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        {/* P1 Playbook Action Button */}
+        <button
+          type="button"
+          onClick={() => setIsPlaybookOpen(true)}
+          className="hidden md:inline-flex items-center gap-1.5 rounded-md bg-red-950/40 px-2.5 py-1.5 text-xs font-semibold text-red-400 border border-red-500/40 hover:bg-red-900/50 hover:border-red-400 transition-all shadow-sm"
+        >
+          <span>🛠️</span>
+          <span>P1 Playbooks</span>
+        </button>
+
+        {/* User Guide Action Button */}
+        <button
+          type="button"
+          onClick={() => setIsGuideOpen(true)}
+          className="hidden sm:inline-flex items-center gap-1.5 rounded-md bg-emerald-950/40 px-2.5 py-1.5 text-xs font-semibold text-emerald-400 border border-emerald-500/40 hover:bg-emerald-900/50 hover:border-emerald-400 transition-all shadow-sm"
+        >
+          <span>📖</span>
+          <span>User Guide</span>
+        </button>
+
         {/* Quick Report Vulnerability Action */}
         <Link
           href="/vulnerabilities/new"
@@ -173,6 +198,10 @@ export function TopHeader() {
           </span>
         </div>
       </div>
+
+      {/* Interactive Modals */}
+      <UserGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <RemediationPlaybookModal isOpen={isPlaybookOpen} onClose={() => setIsPlaybookOpen(false)} />
     </header>
   );
 }

@@ -9,6 +9,7 @@ enriched with real ingestion + risk-engine output.
 """
 
 from contextlib import asynccontextmanager
+import json
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -143,11 +144,15 @@ from backend.app.api.ai_routes import router as ai_router  # noqa: E402
 from backend.app.api.audit_routes import router as audit_router  # noqa: E402
 from backend.app.api.dashboard_routes import router as dashboard_router  # noqa: E402
 from backend.app.api.bulk_routes import router as bulk_router  # noqa: E402
+from backend.app.api.attestation_routes import router as attestation_router  # noqa: E402
+from backend.app.api.chat_routes import router as chat_router  # noqa: E402
 
 app.include_router(case_router, prefix="/api/cases", tags=["cases"])
 app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
-app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+app.include_router(attestation_router, prefix="/api/cases", tags=["attestation"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
+app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+app.include_router(chat_router, prefix="/api/ai", tags=["ai-chat"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(bulk_router, prefix="/api/v1/scan", tags=["bulk-ingestion"])
 

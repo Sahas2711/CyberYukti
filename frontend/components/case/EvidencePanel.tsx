@@ -183,6 +183,36 @@ export function EvidencePanel({ evidence, onValidate, validating = false }: Prop
                   </>
                 )}
               </button>
+
+              {/* Quick Sandbox Target Shortcuts */}
+              <div className="hidden lg:flex items-center gap-1 border-l border-line pl-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTarget("shop-api-01");
+                    void onValidate("shop-api-01");
+                  }}
+                  disabled={validating}
+                  className="inline-flex items-center gap-1 rounded-sm border border-red-500/40 bg-red-950/40 px-2 py-1 font-mono text-[10px] font-medium text-red-300 hover:bg-red-900/60 transition-colors disabled:opacity-50"
+                  title="Run live probe against vulnerable lab target (proves exploitability)"
+                >
+                  <span>🔴</span>
+                  <span>Vulnerable (shop-api-01)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTarget("shop-api-01-patched");
+                    void onValidate("shop-api-01-patched");
+                  }}
+                  disabled={validating}
+                  className="inline-flex items-center gap-1 rounded-sm border border-emerald-500/40 bg-emerald-950/40 px-2 py-1 font-mono text-[10px] font-medium text-emerald-300 hover:bg-emerald-900/60 transition-colors disabled:opacity-50"
+                  title="Run live probe against patched lab target (verifies fix & demotes priority)"
+                >
+                  <span>🟢</span>
+                  <span>Patched (shop-api-01-patched)</span>
+                </button>
+              </div>
             </div>
           )}
           <Tooltip content={CONFIDENCE_TOOLTIP}>
