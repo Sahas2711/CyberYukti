@@ -254,3 +254,48 @@ def get_pipeline_meta() -> Dict[str, Any]:
 def get_clusters() -> List[dict]:
     with _LOCK:
         return list(_clusters_store.values())
+
+
+def validate_case_live(case_id: str, target_override: Optional[str] = None) -> Optional[dict]:
+    """Execute live validation probe for a case and dynamically update priority and audit trail."""
+    with _LOCK:
+        case = _cases_store.get(case_id)
+        if not case:
+            return None
+
+        from backend.app.validator_bridge import execute_case_validation
+
+        prev_evidence = dict(case.get("evidence", {}))
+        prev_priority = dict(case.get("priority", {}))
+
+        # Execute live probe against controlled lab target
+        live_evidence = execute_case_validation(case, target_override)
+        case["evidence"] = live_evidence
+
+        # Recalculate priority dynamically based on fresh evidence status
+        _recompute_priorities()
+
+        # Record audit event
+        add_audit_event(
+            case_id=case_id,
+            actor="evidence-engine",
+            actor_id="validator-live",
+            action="EVIDENCE_VALIDATED",
+            previous_state={
+                "evidence_status": prev_evidence.get("status"),
+                "priority": prev_priority.get("level"),
+                "score": prev_priority.get("score"),
+            },
+            new_state={
+                "evidence_status": live_evidence.get("status"),
+                "priority": case.get("priority", {}).get("level"),
+                "score": case.get("priority", {}).get("score"),
+            },
+            metadata={
+                "confidence": live_evidence.get("confidence"),
+                "reasons": live_evidence.get("reasons", []),
+                "target": target_override or case.get("asset", {}).get("asset_id"),
+            },
+        )
+        return case
+

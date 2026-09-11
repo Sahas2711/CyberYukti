@@ -3,6 +3,8 @@
     "example-package": "1.2.9",
     "log4j": "2.17.1",
     "requests": "2.31.0",
-    "urllib3": "2.0.0"
+    "urllib3": "2.0.0",
+    "jquery": "3.6.0",
+    "aiohttp": "3.8.6"
   }
 }

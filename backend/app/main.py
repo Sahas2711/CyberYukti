@@ -55,6 +55,13 @@ def read_root():
     }
 
 
+@app.get("/health")
+def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "cyberyukti-backend"}
+
+
+
 # ---------------------------------------------------------------------------
 # Ingestion (Person 1)
 # ---------------------------------------------------------------------------
@@ -133,6 +140,20 @@ app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
+# ---------------------------------------------------------------------------
+# Evidence Validation Engine (Person 2)
+# ---------------------------------------------------------------------------
+import sys
+EE_PATH = BASE_DIR / "services" / "evidence-engine"
+if str(EE_PATH) not in sys.path:
+    sys.path.insert(0, str(EE_PATH))
+
+try:
+    from api.server import app as evidence_engine_app
+    app.mount("/api/evidence-engine", evidence_engine_app)
+except Exception:
+    pass
 
 
 if __name__ == "__main__":

@@ -45,6 +45,7 @@ export default function CaseDetailPage() {
   const [caseData, setCaseData] = useState<TriageCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,6 +87,20 @@ export default function CaseDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to run analysis");
     } finally {
       setAnalyzing(false);
+    }
+  }
+
+  async function handleValidate(targetOverride?: string) {
+    if (!id) return;
+    setValidating(true);
+    setError(null);
+    try {
+      const updated = await getProvider().validateCase(id, targetOverride);
+      setCaseData(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to run validation probe");
+    } finally {
+      setValidating(false);
     }
   }
 
@@ -143,7 +158,11 @@ export default function CaseDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <EvidencePanel evidence={caseData.evidence} />
+          <EvidencePanel
+            evidence={caseData.evidence}
+            onValidate={handleValidate}
+            validating={validating}
+          />
           <PriorityBreakdown priority={caseData.priority} />
           <AIAnalysisPanel
             analysis={caseData.ai_analysis}
