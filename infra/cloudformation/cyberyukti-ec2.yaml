@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CyberYukti - minimal single-EC2 deployment (ap-south-1 friendly).
+  1 VPC, 1 public subnet, IGW, route table, security group, one t3.micro
+  EC2 instance running the sahasnagar/cyberyukti Docker image, an IAM
+  role with SSM Session Manager access (no SSH keys), and nothing else.
+  No NAT gateway, no ALB, no RDS, no ECS.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t2.micro, t4g.micro]
+    Description: Cheapest general-purpose instance (t3.micro default)
+
+  ContainerImage:
+    Type: String
+    Default: sahasnagar/cyberyukti:latest
+    Description: Docker image to run (CI pins an exact SHA tag at deploy time)
+
+  ContainerPort:
+    Type: Number
+    Default: 8000
+    Description: Port the container listens on (Dockerfile EXPOSE 8000)
+
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+
+  SubnetCidr:
+    Type: String
+    Default: 10.0.1.0/24
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-vpc"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-igw"
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SubnetCidr
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-public-1"
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rt"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: CyberYukti - allow HTTP from anywhere, no SSH (use SSM)
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP (Caddy/nginx not used; app proxied below)
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: CyberYukti app (direct access for demo)
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound (docker pulls, SSM, scanners)
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-sg"
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "cyberyukti-ec2-role-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-role"
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref EC2Role]
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds: [!Ref InstanceSecurityGroup]
+      IamInstanceProfile: !Ref InstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-cyberyukti"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          exec > /var/log/cyberyukti-bootstrap.log 2>&1
+
+          echo "=== CyberYukti bootstrap $(date -u +%FT%TZ) ==="
+
+          # 1. Docker install (Amazon Linux 2023)
+          dnf install -y docker
+          systemctl enable --now docker
+          usermod -aG docker ssm-user || true
+
+          # 2. Container: pull, clean old, run with restart policy.
+          #    The app exposes ONE port (EXPOSE 8000) - UI + API on the same
+          #    port (static UI served by FastAPI). No docker socket mount:
+          #    scanners (semgrep/trivy) run as subprocesses INSIDE the image.
+          IMAGE="${ContainerImage}"
+          docker pull "$IMAGE"
+          docker rm -f cyberyukti 2>/dev/null || true
+          docker run -d \
+            --name cyberyukti \
+            --restart unless-stopped \
+            --memory 900m \
+            --cpus 1.5 \
+            -p 80:${ContainerPort} \
+            "$IMAGE"
+
+          # 3. Real health check with retries (app /api/health endpoint)
+          for i in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:${ContainerPort}/api/health" >/dev/null 2>&1; then
+              echo "HEALTH CHECK PASSED on attempt $i"
+              HEALTH=OK
+              break
+            fi
+            echo "waiting for app... attempt $i"
+            sleep 5
+          done
+
+          docker ps
+          docker logs --tail 50 cyberyukti || true
+
+          if [ "$HEALTH" != "OK" ]; then
+            echo "HEALTH CHECK FAILED after 30 attempts" >&2
+            exit 1
+          fi
+          echo "=== bootstrap complete: http://<public-ip>/ ==="
+
+Outputs:
+  InstanceId:
+    Description: EC2 instance running CyberYukti (SSM-managed)
+    Value: !Ref EC2Instance
+
+  PublicIP:
+    Description: Public IP - open http://<ip>/ (UI) and http://<ip>/docs (API)
+    Value: !GetAtt EC2Instance.PublicIp
+
+  SSMCommand:
+    Description: Shell access without SSH
+    Value: !Sub "aws ssm start-session --target ${EC2Instance}"

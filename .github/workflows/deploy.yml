@@ -1,0 +1,184 @@
+name: Deploy CyberYukti to AWS EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: sahasnagar/cyberyukti
+  AWS_REGION: ap-south-1
+  STACK_NAME: cyberyukti-demo
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Backend tests
+        run: |
+          pip install -r requirements.txt httpx python-dotenv pytest
+          python -m pytest backend/tests backend/app/ai/tests -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Frontend tests + build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      sha_tag: ${{ steps.tags.outputs.sha_tag }}
+      prev_tag: ${{ steps.prev.outputs.prev_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - id: tags
+        run: echo "sha_tag=${IMAGE_NAME}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - id: prev
+        name: Determine previous successful image tag (rollback target)
+        run: |
+          PREV_SHA=$(git log --format=%h -2 --skip=1 HEAD | head -1)
+          echo "prev_tag=${IMAGE_NAME}:${PREV_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:${{ github.sha::7 }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write      # OIDC
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ensure stack exists (idempotent)
+        run: |
+          if ! aws cloudformation describe-stacks --stack-name "${STACK_NAME}" >/dev/null 2>&1; then
+            aws cloudformation create-stack \
+              --stack-name "${STACK_NAME}" \
+              --template-body "file://infra/cloudformation/cyberyukti-ec2.yaml" \
+              --parameters \
+                ParameterKey=ContainerImage,ParameterValue=${{ needs.build-and-push.outputs.sha_tag }} \
+              --capabilities CAPABILITY_NAMED_IAM >/dev/null
+            aws cloudformation wait stack-create-complete --stack-name "${STACK_NAME}"
+          fi
+
+      - name: Get instance id
+        id: instance
+        run: |
+          IID=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" \
+            --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
+          echo "instance_id=$IID" >> "$GITHUB_OUTPUT"
+          echo "Instance: $IID"
+
+      - name: Deploy exact-SHA container via SSM (with rollback)
+        timeout-minutes: 15
+        run: |
+          NEW_TAG="${{ needs.build-and-push.outputs.sha_tag }}"
+          OLD_TAG="${{ needs.build-and-push.outputs.prev_tag }}"
+          IID="${{ steps.instance.outputs.instance_id }}"
+
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "$IID" \
+            --document-name AWS-RunShellScript \
+            --comment "CyberYukti deploy ${GITHUB_SHA::7}" \
+            --timeout-seconds 600 \
+            --parameters commands="[
+              set -euxo pipefail,
+              NEW_IMAGE='$NEW_TAG',
+              OLD_IMAGE='$OLD_TAG',
+              docker pull \"\$NEW_IMAGE\",
+              OLD_RUNNING=\$(docker inspect --format '{{.Config.Image}}' cyberyukti 2>/dev/null || echo ''),
+              if [ -n \"\$OLD_RUNNING\" ]; then docker tag \"\$OLD_RUNNING\" cyberyukti:rollback 2>/dev/null || true; fi,
+              docker rm -f cyberyukti || true,
+              docker run -d --name cyberyukti --restart unless-stopped --memory 900m --cpus 1.5 -p 80:8000 \"\$NEW_IMAGE\",
+              HEALTH=FAIL,
+              for i in \$(seq 1 24); do
+                if curl -fsS http://127.0.0.1:8000/api/health >/dev/null 2>&1; then HEALTH=OK; break; fi
+                sleep 5
+              done,
+              if [ \"\$HEALTH\" != \"OK\" ]; then
+                echo 'new container unhealthy - rolling back' >&2
+                docker rm -f cyberyukti || true,
+                docker run -d --name cyberyukti --restart unless-stopped --memory 900m --cpus 1.5 -p 80:8000 \"\$OLD_IMAGE\" || docker run -d --name cyberyukti -p 80:8000 cyberyukti:rollback,
+                for i in \$(seq 1 12); do
+                  if curl -fsS http://127.0.0.1:8000/api/health >/dev/null 2>&1; then echo 'ROLLBACK HEALTHY'; break; fi
+                  sleep 5
+                done,
+                exit 1
+              fi,
+              echo 'DEPLOY HEALTHY'
+            ]" \
+            --query "Command.CommandId" --output text)
+
+          # Wait for the command to finish and fail the job if it failed
+          for i in $(seq 1 40); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$IID" --query Status --output text || echo Pending)
+            case "$STATUS" in
+              Success) echo "SSM command succeeded"; exit 0 ;;
+              Failed|Cancelled|TimedOut)
+                echo "SSM command $STATUS. Output:"
+                aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$IID" \
+                  --query "{stdout:StandardOutputContent,stderr:StandardErrorContent}" --output text || true
+                exit 1 ;;
+              *) sleep 5 ;;
+            esac
+          done
+          echo "SSM command did not finish in time" >&2
+          exit 1
+
+      - name: Public health check
+        run: |
+          IP=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" \
+            --query "Stacks[0].Outputs[?OutputKey=='PublicIP'].OutputValue" --output text)
+          for i in $(seq 1 12); do
+            if curl -fsS --max-time 5 "http://$IP/api/health"; then
+              echo "PUBLIC HEALTH OK: http://$IP/"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "public health check failed" >&2
+          exit 1
