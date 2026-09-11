@@ -1,0 +1,37 @@
+[
+  {
+    "finding_id": "F001",
+    "cluster_id": "CL001",
+    "title": "SQL Injection",
+    "severity": "critical",
+    "cve": "CVE-2021-44228",
+    "cvss": 10.0,
+    "asset": {
+      "id": "shop-api-01",
+      "criticality": 1.0,
+      "internet_exposed": true,
+      "environment": "production"
+    },
+    "validation": {
+      "status": "CONFIRMED",
+      "confidence": 0.95
+    }
+  },
+  {
+    "finding_id": "F002",
+    "cluster_id": "CL002",
+    "title": "Outdated Package",
+    "severity": "medium",
+    "cvss": 5.5,
+    "asset": {
+      "id": "internal-worker-01",
+      "criticality": 0.5,
+      "internet_exposed": false,
+      "environment": "testing"
+    },
+    "validation": {
+      "status": "INCONCLUSIVE",
+      "confidence": 0.6
+    }
+  }
+]
