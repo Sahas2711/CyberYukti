@@ -1,4 +1,4 @@
-name: Docker Image Generation
+name: Docker Image Generation & Docker Hub Push
 
 on:
   push:
@@ -14,11 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
+  DEFAULT_REPO_NAME: cyberyukti
 
 jobs:
   build-and-push:
-    name: Generate Single Docker Image
+    name: Build & Push Unified Docker Image (Docker Hub & GHCR)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,19 +34,46 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Normalize Repository Name (Lowercase for Docker)
-        id: prep
+      - name: Resolve Docker Target Names (Docker Hub & GHCR)
+        id: resolve-targets
         run: |
-          # Docker tags strictly require lowercase repository names
-          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_NAME=${{ env.REGISTRY }}/${REPO_LOWER}" >> $GITHUB_ENV
-          echo "Target Image: ${{ env.REGISTRY }}/${REPO_LOWER}"
+          # 1. GitHub Container Registry target (always enabled)
+          GHCR_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_LIST="ghcr.io/${GHCR_REPO}"
+
+          # 2. Docker Hub target (enabled if secrets are present)
+          DH_USER="${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}"
+          DH_REPO="${{ secrets.DOCKERHUB_REPO || env.DEFAULT_REPO_NAME }}"
+
+          if [ -n "$DH_USER" ]; then
+            DH_USER_LOWER=$(echo "$DH_USER" | tr '[:upper:]' '[:lower:]')
+            DH_REPO_LOWER=$(echo "$DH_REPO" | tr '[:upper:]' '[:lower:]')
+            DH_TARGET="${DH_USER_LOWER}/${DH_REPO_LOWER}"
+            IMAGE_LIST="${IMAGE_LIST}
+${DH_TARGET}"
+            echo "ENABLE_DOCKERHUB=true" >> $GITHUB_ENV
+            echo "Docker Hub Destination: ${DH_TARGET}"
+          else
+            echo "ENABLE_DOCKERHUB=false" >> $GITHUB_ENV
+            echo "Notice: DOCKERHUB_USERNAME secret not configured yet. Image will be published to GHCR."
+          fi
+
+          echo "IMAGE_TARGETS<<EOF" >> $GITHUB_ENV
+          echo "$IMAGE_LIST" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request' && env.ENABLE_DOCKERHUB == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN || secrets.DOCKERHUB_PASSWORD || secrets.DOCKER_PASSWORD }}
 
       - name: Log in to GitHub Container Registry (GHCR)
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -54,7 +81,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_TARGETS }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,format=short,prefix=sha-
@@ -76,9 +103,15 @@ jobs:
       - name: Verify Docker Generation & Print Summary
         run: |
           echo "=========================================================="
-          echo " CyberYukti Single Docker Image Generation Successful!   "
-          echo " Image Tags Generated:                                    "
+          echo " Single Unified Docker Image Successfully Generated!      "
+          echo "=========================================================="
+          echo "Published Tags:"
           echo "${{ steps.meta.outputs.tags }}"
-          echo " Image Digest: ${{ steps.docker_build.outputs.digest }}   "
-          echo " Registry: ${{ env.REGISTRY }}                            "
+          echo "Image Digest: ${{ steps.docker_build.outputs.digest }}"
+          if [ "${{ env.ENABLE_DOCKERHUB }}" = "true" ]; then
+            echo "Status: Image uploaded to Docker Hub and GHCR!"
+          else
+            echo "Status: Image uploaded to GHCR."
+            echo "To push to Docker Hub as well, add DOCKERHUB_USERNAME and DOCKERHUB_TOKEN in GitHub repository secrets."
+          fi
           echo "=========================================================="
