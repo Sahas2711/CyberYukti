@@ -36,15 +36,15 @@ jobs:
 
       - name: Resolve Docker Target Names
         id: resolve_targets
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}
+          DH_REPO: ${{ secrets.DOCKERHUB_REPO || env.DEFAULT_REPO_NAME }}
         run: |
           # 1. GHCR image target (always enabled)
           GHCR_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           TARGETS="ghcr.io/${GHCR_REPO}"
 
           # 2. Docker Hub image target (if secrets are set)
-          DH_USER="${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}"
-          DH_REPO="${{ secrets.DOCKERHUB_REPO || env.DEFAULT_REPO_NAME }}"
-
           if [ -n "$DH_USER" ]; then
             DH_USER_LOWER=$(echo "$DH_USER" | tr '[:upper:]' '[:lower:]')
             DH_REPO_LOWER=$(echo "$DH_REPO" | tr '[:upper:]' '[:lower:]')
@@ -60,7 +60,7 @@ jobs:
           echo "targets=${TARGETS}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to Docker Hub
-        if: github.event_name != 'pull_request' && (secrets.DOCKERHUB_USERNAME != '' || secrets.DOCKER_USERNAME != '')
+        if: github.event_name != 'pull_request' && steps.resolve_targets.outputs.has_dockerhub == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}
