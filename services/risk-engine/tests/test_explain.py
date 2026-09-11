@@ -30,9 +30,12 @@ def _post_explain(payload: dict) -> dict:
 
 
 def _assert_response_shape(body: dict) -> None:
-    """Every /explain response must carry all seven required fields."""
-    for field in ("finding_id", "title", "risk_score", "priority",
-                  "reasons", "factors", "summary"):
+    """Every /explain response must carry all required fields."""
+    for field in (
+        "finding_id", "title", "risk_score", "priority",
+        "reasons", "factors", "summary",
+        "evidence_confidence", "evidence_status", "decision_category",
+    ):
         assert field in body, f"Missing field: {field}"
     assert isinstance(body["reasons"], list)
     assert isinstance(body["factors"], dict)
