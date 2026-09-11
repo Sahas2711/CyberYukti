@@ -1,0 +1,55 @@
+version: '3.8'
+
+networks:
+  lab-net:
+    driver: bridge
+    internal: true # Isolated lab network, no external egress
+
+services:
+  evidence-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: evidence-validation-engine
+    ports:
+      - "8000:8000"
+    networks:
+      - lab-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    environment:
+      - PROBE_TIMEOUT_SECONDS=5.0
+      - MAX_PAYLOAD_SIZE_BYTES=65536
+
+  lab-shop-api:
+    image: python:3.12-alpine
+    container_name: lab-shop-api
+    networks:
+      - lab-net
+    command: python -m http.server 8080 --directory /lab
+    volumes:
+      - ./lab/vulnerable:/lab:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  lab-shop-api-patched:
+    image: python:3.12-alpine
+    container_name: lab-shop-api-patched
+    networks:
+      - lab-net
+    command: python -m http.server 8080 --directory /lab
+    volumes:
+      - ./lab/patched:/lab:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
