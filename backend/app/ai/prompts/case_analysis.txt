@@ -1,0 +1,1 @@
+Analyze the following verified vulnerability case and produce a JSON response matching the AIAnalysis schema. Use ONLY the provided data. Ground every claim in the input fields.
