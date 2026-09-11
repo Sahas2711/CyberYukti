@@ -1,0 +1,181 @@
+{
+  "version": "1.65.0",
+  "results": [
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 34, "col": 12 },
+      "end": { "line": 34, "col": 45 },
+      "extra": {
+        "message": "User-controlled filename passed directly to open() without path sanitation.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 42, "col": 8 },
+      "end": { "line": 42, "col": 39 },
+      "extra": {
+        "message": "Potential arbitrary file read via os.path.join with untrusted request parameter.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 56, "col": 15 },
+      "end": { "line": 56, "col": 48 },
+      "extra": {
+        "message": "File download streaming unsanitized user path.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 68, "col": 10 },
+      "end": { "line": 68, "col": 35 },
+      "extra": {
+        "message": "Unchecked directory traversal sequence in static asset lookup.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 77, "col": 14 },
+      "end": { "line": 77, "col": 52 },
+      "extra": {
+        "message": "Direct send_file invocation using raw URL argument.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 89, "col": 9 },
+      "end": { "line": 89, "col": 40 },
+      "extra": {
+        "message": "Static cache lookup vulnerable to path traversal.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 102, "col": 11 },
+      "end": { "line": 102, "col": 44 },
+      "extra": {
+        "message": "Path traversal in fallback static asset resolver.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.path-traversal.open",
+      "path": "handlers/static.py",
+      "start": { "line": 115, "col": 16 },
+      "end": { "line": 115, "col": 50 },
+      "extra": {
+        "message": "Unvalidated resource loading from user query.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"],
+          "cve": ["CVE-2023-38606"],
+          "route": "/api/static/download"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.auth.improper-auth-check",
+      "path": "admin/auth.py",
+      "start": { "line": 19, "col": 8 },
+      "end": { "line": 19, "col": 45 },
+      "extra": {
+        "message": "Admin authorization header verification missing cryptographic signature check.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-287: Improper Authentication"],
+          "route": "/api/admin/auth"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.auth.improper-auth-check",
+      "path": "admin/auth.py",
+      "start": { "line": 28, "col": 12 },
+      "end": { "line": 28, "col": 50 },
+      "extra": {
+        "message": "Default admin token accepted when X-Debug header is present.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-287: Improper Authentication"],
+          "route": "/api/admin/auth"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.auth.improper-auth-check",
+      "path": "admin/auth.py",
+      "start": { "line": 41, "col": 5 },
+      "end": { "line": 41, "col": 38 },
+      "extra": {
+        "message": "Improper token session expiration check in admin router.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-287: Improper Authentication"],
+          "route": "/api/admin/auth"
+        }
+      }
+    },
+    {
+      "check_id": "rules.python.auth.improper-auth-check",
+      "path": "admin/auth.py",
+      "start": { "line": 55, "col": 9 },
+      "end": { "line": 55, "col": 42 },
+      "extra": {
+        "message": "Unauthenticated access to internal administrative endpoints.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-287: Improper Authentication"],
+          "route": "/api/admin/auth"
+        }
+      }
+    }
+  ]
+}

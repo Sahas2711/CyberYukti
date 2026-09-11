@@ -1,0 +1,433 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "cyberyukti-service:v1.2",
+  "ArtifactType": "container_image",
+  "Results": [
+    {
+      "Target": "requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp is an asynchronous HTTP client/server framework for asyncio and Python. An improper path validation flaw allows remote attackers to traverse directories and read arbitrary files.",
+          "CweIDs": ["CWE-22"],
+          "References": ["https://nvd.nist.gov/vuln/detail/CVE-2023-38606"]
+        }
+      ]
+    },
+    {
+      "Target": "backend/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp is an asynchronous HTTP client/server framework for asyncio and Python. An improper path validation flaw allows remote attackers to traverse directories and read arbitrary files.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "Pipfile.lock",
+      "Class": "lang-pkgs",
+      "Type": "pipenv",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp is an asynchronous HTTP client/server framework for asyncio and Python.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "poetry.lock",
+      "Class": "lang-pkgs",
+      "Type": "poetry",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp is an asynchronous HTTP client/server framework for asyncio and Python.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "/opt/app/site-packages/aiohttp",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "services/api/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "services/worker/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "deploy/docker/requirements-base.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "deploy/docker/requirements-prod.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "tests/e2e/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "infrastructure/ansible/roles/app/files/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "rootfs/usr/local/lib/python3.10/site-packages/aiohttp",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "build/virtualenv/lib/python3.10/site-packages/aiohttp",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "gateway/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "services/auth/requirements.txt",
+      "Class": "lang-pkgs",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp directory traversal vulnerability.",
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "debian:11 (debian 11.6)",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing inside an X.509 GeneralName structure.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "layer-sha256:7f8e1234a56b (debian 11.6)",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "layer-sha256:88bc45d2e11a (debian 11.6)",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "rootfs/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "container/base/dpkg/status",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "opt/containerd/rootfs/libssl",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "var/lib/dpkg/status",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "usr/bin/openssl",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "etc/ssl/certs",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    },
+    {
+      "Target": "dist/runtime/libssl",
+      "Class": "os-pkgs",
+      "Type": "debian",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing.",
+          "CweIDs": ["CWE-843"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "summary": {
+    "total_raw_findings": 42,
+    "total_clusters": 4,
+    "noise_reduction_percentage": 90.48,
+    "breakdown_by_tool": {
+      "trivy": 25,
+      "semgrep": 12,
+      "nuclei": 5
+    }
+  },
+  "clusters": [
+    {
+      "cluster_id": "CLUST-001",
+      "title": "[Correlated SAST+DAST] Path Traversal in /api/static/download (CVE-2023-38606)",
+      "primary_cve": "CVE-2023-38606",
+      "root_cause_cwe": "CWE-22",
+      "target_asset": "cyberyukti-target:v1.2",
+      "affected_component": "/api/static/download",
+      "normalized_route": "/api/static/download",
+      "raw_findings_count": 11,
+      "participating_tools": [
+        "nuclei",
+        "semgrep"
+      ],
+      "underlying_finding_ids": [
+        "00a95b7cf627e706",
+        "194a620c6eeb7832",
+        "4515cef0394440a1",
+        "4527ccc05e4b0d61",
+        "7c832e979636632a",
+        "9088a261bb98e64e",
+        "95aebf02f645e46d",
+        "985f90902afadae7",
+        "bda643bb8b729291",
+        "cd224b8cefbb0066",
+        "d3eed45a33d69ab3"
+      ],
+      "representative_finding": {
+        "finding_id": "95aebf02f645e46d",
+        "tool_name": "nuclei",
+        "scan_type": "dast",
+        "title": "Generic Path Traversal - Arbitrary File Read",
+        "description": "Path traversal vulnerability allows unauthorized reading of sensitive local files via unsanitized parameter.",
+        "cve_id": "CVE-2023-38606",
+        "cwe_ids": [
+          "CWE-22"
+        ],
+        "raw_severity": "HIGH",
+        "target_asset": "cyberyukti-target:v1.2",
+        "file_path": null,
+        "line_number": null,
+        "http_endpoint": "/api/static/download",
+        "http_method": "GET",
+        "package_name": null,
+        "installed_version": null,
+        "fixed_version": null,
+        "raw_payload": {
+          "template-id": "http-path-traversal",
+          "info": {
+            "name": "Generic Path Traversal - Arbitrary File Read",
+            "author": "projectdiscovery",
+            "severity": "high",
+            "description": "Path traversal vulnerability allows unauthorized reading of sensitive local files via unsanitized parameter.",
+            "classification": {
+              "cve-id": "CVE-2023-38606",
+              "cwe-id": [
+                "cwe-22"
+              ]
+            }
+          },
+          "type": "http",
+          "host": "https://api.cyberyukti.local",
+          "matched-at": "https://api.cyberyukti.local/api/static/download?file=../../../../etc/passwd",
+          "request": "GET /api/static/download?file=../../../../etc/passwd HTTP/1.1\nHost: api.cyberyukti.local",
+          "response": "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nroot:x:0:0:root:/root:/bin/bash",
+          "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/static/download?file=../../../../etc/passwd'"
+        }
+      }
+    },
+    {
+      "cluster_id": "CLUST-002",
+      "title": "[Correlated SAST+DAST] Improper Authentication in /api/admin/auth",
+      "primary_cve": null,
+      "root_cause_cwe": "CWE-287",
+      "target_asset": "cyberyukti-target:v1.2",
+      "affected_component": "/api/admin/auth",
+      "normalized_route": "/api/admin/auth",
+      "raw_findings_count": 6,
+      "participating_tools": [
+        "nuclei",
+        "semgrep"
+      ],
+      "underlying_finding_ids": [
+        "14afb74285441fbb",
+        "210b36c7cbcfd973",
+        "218011838d13fd7d",
+        "28dbf89d778ef09f",
+        "98868dd0409f61bb",
+        "de7bc150b552a0a3"
+      ],
+      "representative_finding": {
+        "finding_id": "14afb74285441fbb",
+        "tool_name": "nuclei",
+        "scan_type": "dast",
+        "title": "Administrative API Endpoint Authentication Bypass",
+        "description": "Administrative route is accessible without cryptographic validation when specific headers are provided.",
+        "cve_id": null,
+        "cwe_ids": [
+          "CWE-287"
+        ],
+        "raw_severity": "HIGH",
+        "target_asset": "cyberyukti-target:v1.2",
+        "file_path": null,
+        "line_number": null,
+        "http_endpoint": "/api/admin/auth",
+        "http_method": "GET",
+        "package_name": null,
+        "installed_version": null,
+        "fixed_version": null,
+        "raw_payload": {
+          "template-id": "api-admin-auth-bypass",
+          "info": {
+            "name": "Administrative API Endpoint Authentication Bypass",
+            "author": "projectdiscovery",
+            "severity": "high",
+            "description": "Administrative route is accessible without cryptographic validation when specific headers are provided.",
+            "classification": {
+              "cwe-id": [
+                "cwe-287"
+              ]
+            }
+          },
+          "type": "http",
+          "host": "https://api.cyberyukti.local",
+          "matched-at": "https://api.cyberyukti.local/api/admin/auth",
+          "request": "GET /api/admin/auth HTTP/1.1\nHost: api.cyberyukti.local\nX-Debug: true",
+          "response": "HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"authenticated\": true, \"role\": \"admin\"}",
+          "curl-command": "curl -X GET 'https://api.cyberyukti.local/api/admin/auth' -H 'X-Debug: true'"
+        }
+      }
+    },
+    {
+      "cluster_id": "CLUST-003",
+      "title": "[SCA] aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+      "primary_cve": "CVE-2023-38606",
+      "root_cause_cwe": "CWE-22",
+      "target_asset": "cyberyukti-service:v1.2",
+      "affected_component": "aiohttp",
+      "normalized_route": null,
+      "raw_findings_count": 15,
+      "participating_tools": [
+        "trivy"
+      ],
+      "underlying_finding_ids": [
+        "1025ec2993ff9909",
+        "1ff0da33596d6b53",
+        "24d9c22f7b1cba16",
+        "52c060127928c2af",
+        "54438f0368dd30f7",
+        "61094c5ff14a1f29",
+        "6d699a81a44d560e",
+        "714650dc21ec7a84",
+        "8bcf3f2f121064b4",
+        "9dcba424d0a646b8",
+        "a7553c0940a518f5",
+        "a8185a851a27faf2",
+        "caac5012b3240223",
+        "cbc7892b329a8e39",
+        "d159a6d6fc05209d"
+      ],
+      "representative_finding": {
+        "finding_id": "a8185a851a27faf2",
+        "tool_name": "trivy",
+        "scan_type": "sca",
+        "title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+        "description": "aiohttp is an asynchronous HTTP client/server framework for asyncio and Python. An improper path validation flaw allows remote attackers to traverse directories and read arbitrary files.",
+        "cve_id": "CVE-2023-38606",
+        "cwe_ids": [
+          "CWE-22"
+        ],
+        "raw_severity": "HIGH",
+        "target_asset": "cyberyukti-service:v1.2",
+        "file_path": "requirements.txt",
+        "line_number": null,
+        "http_endpoint": null,
+        "http_method": null,
+        "package_name": "aiohttp",
+        "installed_version": "3.8.4",
+        "fixed_version": "3.8.5",
+        "raw_payload": {
+          "VulnerabilityID": "CVE-2023-38606",
+          "PkgName": "aiohttp",
+          "InstalledVersion": "3.8.4",
+          "FixedVersion": "3.8.5",
+          "Severity": "HIGH",
+          "Title": "aiohttp: Directory traversal vulnerability in HTTP server static file handling",
+          "Description": "aiohttp is an asynchronous HTTP client/server framework for asyncio and Python. An improper path validation flaw allows remote attackers to traverse directories and read arbitrary files.",
+          "CweIDs": [
+            "CWE-22"
+          ],
+          "References": [
+            "https://nvd.nist.gov/vuln/detail/CVE-2023-38606"
+          ]
+        }
+      }
+    },
+    {
+      "cluster_id": "CLUST-004",
+      "title": "[Container] openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+      "primary_cve": "CVE-2023-0286",
+      "root_cause_cwe": "CWE-843",
+      "target_asset": "cyberyukti-service:v1.2",
+      "affected_component": "libssl3",
+      "normalized_route": null,
+      "raw_findings_count": 10,
+      "participating_tools": [
+        "trivy"
+      ],
+      "underlying_finding_ids": [
+        "1cb18e265d315c73",
+        "3c6d627fa70468f1",
+        "5385d3b928e5ea89",
+        "7a5111a1fc980490",
+        "8254e57673f84baa",
+        "94553307c22d131f",
+        "9dc32de2c5bb7e8f",
+        "c3169c1ccdeb7802",
+        "ca1a5b517b1d7f56",
+        "cf26e391b0ce2477"
+      ],
+      "representative_finding": {
+        "finding_id": "9dc32de2c5bb7e8f",
+        "tool_name": "trivy",
+        "scan_type": "container",
+        "title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+        "description": "There is a type confusion vulnerability relating to X.400 address processing inside an X.509 GeneralName structure.",
+        "cve_id": "CVE-2023-0286",
+        "cwe_ids": [
+          "CWE-843"
+        ],
+        "raw_severity": "HIGH",
+        "target_asset": "cyberyukti-service:v1.2",
+        "file_path": "debian:11 (debian 11.6)",
+        "line_number": null,
+        "http_endpoint": null,
+        "http_method": null,
+        "package_name": "libssl3",
+        "installed_version": "3.0.7-1",
+        "fixed_version": "3.0.7-1+deb11u1",
+        "raw_payload": {
+          "VulnerabilityID": "CVE-2023-0286",
+          "PkgName": "libssl3",
+          "InstalledVersion": "3.0.7-1",
+          "FixedVersion": "3.0.7-1+deb11u1",
+          "Severity": "HIGH",
+          "Title": "openssl: X.400 address type confusion in GENERAL_NAME_cmp",
+          "Description": "There is a type confusion vulnerability relating to X.400 address processing inside an X.509 GeneralName structure.",
+          "CweIDs": [
+            "CWE-843"
+          ]
+        }
+      }
+    }
+  ]
+}
