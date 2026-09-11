@@ -37,3 +37,22 @@ class PriorityResult(BaseModel):
     priority: Literal["P1", "P2", "P3", "P4"]
     reasons: list[str]
     factors: dict[str, float]
+
+
+class BatchFindingInput(BaseModel):
+    findings: list[FindingInput]
+
+
+class BatchResult(BaseModel):
+    count: int
+    results: list[PriorityResult]
+
+
+class ExplainResult(BaseModel):
+    finding_id: str
+    title: str
+    risk_score: float
+    priority: Literal["P1", "P2", "P3", "P4"]
+    reasons: list[str]
+    factors: dict[str, float]
+    summary: str

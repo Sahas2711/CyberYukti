@@ -26,12 +26,17 @@ The service does not independently exploit targets or claim that a finding is co
 risk-engine/
 ├── app/
 │   ├── __init__.py
+│   ├── explanation.py
 │   ├── main.py
 │   ├── models.py
-│   ├── scoring.py
-│   └── prioritization.py
+│   ├── prioritization.py
+│   └── scoring.py
 ├── tests/
-│   └── test_health.py
+│   ├── test_batch.py
+│   ├── test_examples.py
+│   ├── test_explain.py
+│   ├── test_health.py
+│   └── test_sorting.py
 ├── examples/
 │   └── sample-findings.json
 ├── requirements.txt
@@ -139,7 +144,75 @@ This endpoint accepts one finding and returns its risk score, priority, reasons,
 POST /assess/batch
 ```
 
-This endpoint accepts a list of findings and returns one result for each finding.
+This endpoint accepts a JSON object containing a `findings` array and returns a response envelope with:
+
+* `count` — the total number of findings processed
+* `results` — an array of `PriorityResult` objects in submission order
+
+#### Request format for `/assess/batch`
+
+```json
+{
+  "findings": [
+    {
+      "finding_id": "F001",
+      "title": "SQL Injection",
+      "severity": "critical",
+      "cvss": 10.0,
+      "asset": {
+        "id": "shop-api-01",
+        "criticality": 1.0,
+        "internet_exposed": true,
+        "environment": "production"
+      },
+      "validation": {
+        "status": "CONFIRMED",
+        "confidence": 0.95
+      }
+    },
+    {
+      "finding_id": "F002",
+      "title": "Info Disclosure",
+      "severity": "low",
+      "cvss": 2.0,
+      "asset": {
+        "id": "dev-server",
+        "criticality": 0.2,
+        "internet_exposed": false,
+        "environment": "development"
+      },
+      "validation": {
+        "status": "NOT_CONFIRMED",
+        "confidence": 0.0
+      }
+    }
+  ]
+}
+```
+
+#### Response format for `/assess/batch`
+
+```json
+{
+  "count": 2,
+  "results": [
+    {
+      "finding_id": "F001",
+      "risk_score": 0.9925,
+      "priority": "P1",
+      "reasons": ["Critical severity", "Very high CVSS score", "Internet-exposed asset", "Production environment", "Evidence confirmed with 95% confidence"],
+      "factors": { "severity": 1.0, "asset_criticality": 1.0, "exposure": 1.0, "validation": 0.95 }
+    },
+    {
+      "finding_id": "F002",
+      "risk_score": 0.205,
+      "priority": "P4",
+      "reasons": ["Evidence was not confirmed", "No CVE identifier available"],
+      "factors": { "severity": 0.2, "asset_criticality": 0.2, "exposure": 0.3, "validation": 0.1 }
+    }
+  ]
+}
+```
 
 ### Sorted Batch Assessment
 
@@ -147,10 +220,119 @@ This endpoint accepts a list of findings and returns one result for each finding
 POST /assess/batch/sorted
 ```
 
-This endpoint accepts a list of findings and returns results sorted by:
+This endpoint accepts the same `BatchFindingInput` body as `/assess/batch` and returns a `BatchResult` envelope where `results` are sorted by:
 
-1. Priority level, with P1 first
-2. Risk score, with the highest score first within the same priority
+1. Priority level: P1 → P2 → P3 → P4
+2. `risk_score` descending within the same priority band
+
+#### Request format for `/assess/batch/sorted`
+
+```json
+{
+  "findings": [
+    {
+      "finding_id": "F002",
+      "title": "Info Disclosure",
+      "severity": "low",
+      "cvss": 2.0,
+      "asset": {
+        "id": "dev-server",
+        "criticality": 0.2,
+        "internet_exposed": false,
+        "environment": "development"
+      },
+      "validation": { "status": "NOT_CONFIRMED", "confidence": 0.0 }
+    },
+    {
+      "finding_id": "F001",
+      "title": "SQL Injection",
+      "severity": "critical",
+      "cvss": 10.0,
+      "asset": {
+        "id": "shop-api-01",
+        "criticality": 1.0,
+        "internet_exposed": true,
+        "environment": "production"
+      },
+      "validation": { "status": "CONFIRMED", "confidence": 0.95 }
+    }
+  ]
+}
+```
+
+#### Response format for `/assess/batch/sorted`
+
+```json
+{
+  "count": 2,
+  "results": [
+    {
+      "finding_id": "F001",
+      "risk_score": 0.9925,
+      "priority": "P1",
+      "reasons": ["Critical severity", "Very high CVSS score", "Internet-exposed asset", "Production environment", "Evidence confirmed with 95% confidence"],
+      "factors": { "severity": 1.0, "asset_criticality": 1.0, "exposure": 1.0, "validation": 0.95 }
+    },
+    {
+      "finding_id": "F002",
+      "risk_score": 0.205,
+      "priority": "P4",
+      "reasons": ["Evidence was not confirmed", "No CVE identifier available"],
+      "factors": { "severity": 0.2, "asset_criticality": 0.2, "exposure": 0.3, "validation": 0.1 }
+    }
+  ]
+}
+```
+
+#### PowerShell example for `/assess/batch/sorted`
+
+```powershell
+$sortedBody = @{
+    findings = @(
+        @{
+            finding_id = "F002"
+            title      = "Info Disclosure"
+            severity   = "low"
+            cvss       = 2.0
+            asset      = @{
+                id               = "dev-server"
+                criticality      = 0.2
+                internet_exposed = $false
+                environment      = "development"
+            }
+            validation = @{ status = "NOT_CONFIRMED"; confidence = 0.0 }
+        },
+        @{
+            finding_id = "F001"
+            title      = "SQL Injection"
+            severity   = "critical"
+            cvss       = 10.0
+            asset      = @{
+                id               = "shop-api-01"
+                criticality      = 1.0
+                internet_exposed = $true
+                environment      = "production"
+            }
+            validation = @{ status = "CONFIRMED"; confidence = 0.95 }
+        }
+    )
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8003/assess/batch/sorted" `
+    -Method POST `
+    -ContentType "application/json" `
+    -Body $sortedBody
+```
+
+Expected result (P1 appears first regardless of submission order):
+
+```text
+count   : 2
+results : {@{finding_id=F001; risk_score=0.9925; priority=P1; ...},
+           @{finding_id=F002; risk_score=0.205;  priority=P4; ...}}
+```
+
 
 ### Finding Explanation
 
@@ -158,7 +340,112 @@ This endpoint accepts a list of findings and returns results sorted by:
 POST /explain
 ```
 
-This endpoint returns a human-readable summary of the finding’s risk assessment.
+This endpoint accepts a single `FindingInput` and returns a structured explanation of why the finding received its priority and risk score.
+
+The response includes a `summary` field — a readable sentence that accurately reflects:
+
+* The severity or CVSS score used
+* Whether the asset is internet-exposed and in production
+* The exact validation status (`CONFIRMED`, `INCONCLUSIVE`, `NOT_CONFIRMED`, or `UNAVAILABLE`)
+
+The `summary` never claims evidence was confirmed unless the validation status is `CONFIRMED`.
+
+#### Request format for `/explain`
+
+```json
+{
+  "finding_id": "F001",
+  "title": "SQL Injection",
+  "severity": "critical",
+  "cvss": 9.8,
+  "cve": "CVE-2021-44228",
+  "asset": {
+    "id": "shop-api-01",
+    "criticality": 1.0,
+    "internet_exposed": true,
+    "environment": "production"
+  },
+  "validation": {
+    "status": "CONFIRMED",
+    "confidence": 0.95
+  }
+}
+```
+
+#### Response format for `/explain`
+
+```json
+{
+  "finding_id": "F001",
+  "title": "SQL Injection",
+  "risk_score": 0.9845,
+  "priority": "P1",
+  "reasons": [
+    "Critical severity",
+    "Very high CVSS score",
+    "Internet-exposed asset",
+    "Production environment",
+    "Evidence confirmed with 95% confidence"
+  ],
+  "factors": {
+    "severity": 0.98,
+    "asset_criticality": 1.0,
+    "exposure": 1.0,
+    "validation": 0.95
+  },
+  "summary": "Finding F001 received priority P1 with a risk score of 0.9845 because it has a CVSS score of 9.8, affects an internet-exposed production asset, and its evidence was confirmed with 95% confidence."
+}
+```
+
+#### Validation status in the summary
+
+| Validation Status | Summary contains           |
+| ----------------- | -------------------------- |
+| `CONFIRMED`       | "confirmed with X% confidence" |
+| `INCONCLUSIVE`    | "inconclusive"             |
+| `NOT_CONFIRMED`   | "not confirmed"            |
+| `UNAVAILABLE`     | "unavailable"              |
+
+#### PowerShell example for `/explain`
+
+```powershell
+$explainBody = @{
+    finding_id = "F001"
+    title      = "SQL Injection"
+    severity   = "critical"
+    cvss       = 9.8
+    cve        = "CVE-2021-44228"
+    asset      = @{
+        id               = "shop-api-01"
+        criticality      = 1.0
+        internet_exposed = $true
+        environment      = "production"
+    }
+    validation = @{
+        status     = "CONFIRMED"
+        confidence = 0.95
+    }
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8003/explain" `
+    -Method POST `
+    -ContentType "application/json" `
+    -Body $explainBody
+```
+
+Expected result:
+
+```text
+finding_id : F001
+title      : SQL Injection
+risk_score : 0.9845
+priority   : P1
+summary    : Finding F001 received priority P1 with a risk score of 0.9845
+             because it has a CVSS score of 9.8, affects an internet-exposed
+             production asset, and its evidence was confirmed with 95% confidence.
+```
+
 
 ## Risk Scoring Formula
 
@@ -331,6 +618,75 @@ risk_score : 0.9925
 priority   : P1
 ```
 
+### Batch Assessment PowerShell Test
+
+```powershell
+$batchBody = @{
+    findings = @(
+        @{
+            finding_id = "F001"
+            title      = "SQL Injection"
+            severity   = "critical"
+            cvss       = 10.0
+            asset      = @{
+                id               = "shop-api-01"
+                criticality      = 1.0
+                internet_exposed = $true
+                environment      = "production"
+            }
+            validation = @{
+                status     = "CONFIRMED"
+                confidence = 0.95
+            }
+        },
+        @{
+            finding_id = "F002"
+            title      = "Info Disclosure"
+            severity   = "low"
+            cvss       = 2.0
+            asset      = @{
+                id               = "dev-server"
+                criticality      = 0.2
+                internet_exposed = $false
+                environment      = "development"
+            }
+            validation = @{
+                status     = "NOT_CONFIRMED"
+                confidence = 0.0
+            }
+        }
+    )
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8003/assess/batch" `
+    -Method POST `
+    -ContentType "application/json" `
+    -Body $batchBody
+```
+
+Expected result:
+
+```text
+count   : 2
+results : {@{finding_id=F001; risk_score=0.9925; priority=P1; ...},
+           @{finding_id=F002; risk_score=0.205;  priority=P4; ...}}
+```
+
+### Loading the Synthetic Dataset
+
+You can load the provided synthetic dataset from `examples\sample-findings.json` and send it to the batch assessment endpoint using PowerShell:
+
+```powershell
+$jsonBody = Get-Content -Path "examples\sample-findings.json" -Raw
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8003/assess/batch/sorted" `
+    -Method POST `
+    -ContentType "application/json" `
+    -Body $jsonBody
+```
+
 ## Integration Flow
 
 The intended integration flow is:
@@ -379,12 +735,56 @@ The engine produces:
 The service follows these rules:
 
 * A finding is not considered confirmed unless its validation status is `CONFIRMED`.
+* Unconfirmed evidence must not be described as confirmed.
 * `INCONCLUSIVE` validation must reduce confidence rather than increase it.
 * Missing validation data must not be treated as confirmed evidence.
 * The engine must not claim that exploitation occurred without validation evidence.
+* The service does not exploit targets.
 * Scores must be deterministic and reproducible.
 * All input values must be validated using Pydantic models.
-* The service is intended for synthetic findings and controlled lab environments.
+* The service only evaluates synthetic or controlled-lab findings.
+
+## Dashboard Integration (Person 4)
+
+The Risk Intelligence Engine provides the prioritized results that should be displayed in the analyst dashboard.
+
+### How to Call the Service
+
+The dashboard should use the `/assess/batch/sorted` endpoint to submit multiple findings at once and receive them back in prioritized order (P1 to P4).
+
+### Expected JSON Fields
+
+The dashboard should parse the response envelope which contains:
+* `count`: Integer representing the total number of processed findings.
+* `results`: An array of objects, each containing:
+  * `finding_id`: The original ID of the finding.
+  * `risk_score`: Float between 0.0 and 1.0.
+  * `priority`: String (P1, P2, P3, or P4).
+  * `reasons`: Array of strings detailing the risk factors.
+  * `factors`: Object with the numerical breakdown of the score.
+
+For detailed human-readable summaries, the dashboard can call the `/explain` endpoint passing a single finding to get a `summary` sentence.
+
+### Example Response Handling
+
+```javascript
+// Example in JavaScript (Frontend Dashboard)
+async function fetchPrioritizedFindings(findingsPayload) {
+    const response = await fetch('http://127.0.0.1:8003/assess/batch/sorted', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ findings: findingsPayload })
+    });
+    
+    const data = await response.json();
+    console.log(`Loaded ${data.count} prioritized findings.`);
+    
+    // The results are already sorted P1 to P4
+    data.results.forEach(result => {
+        console.log(`[${result.priority}] ${result.finding_id} - Score: ${result.risk_score}`);
+    });
+}
+```
 
 ## Future Enhancements
 

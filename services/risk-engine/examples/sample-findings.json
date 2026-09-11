@@ -1,37 +1,104 @@
-[
-  {
-    "finding_id": "F001",
-    "cluster_id": "CL001",
-    "title": "SQL Injection",
-    "severity": "critical",
-    "cve": "CVE-2021-44228",
-    "cvss": 10.0,
-    "asset": {
-      "id": "shop-api-01",
-      "criticality": 1.0,
-      "internet_exposed": true,
-      "environment": "production"
+{
+  "findings": [
+    {
+      "finding_id": "SYN-001",
+      "title": "Remote Code Execution in Authentication Module",
+      "severity": "critical",
+      "cve": "CVE-2023-99999",
+      "cvss": 9.8,
+      "asset": {
+        "id": "web-gateway-prod-01",
+        "criticality": 1.0,
+        "internet_exposed": true,
+        "environment": "production"
+      },
+      "validation": {
+        "status": "CONFIRMED",
+        "confidence": 0.95
+      }
     },
-    "validation": {
-      "status": "CONFIRMED",
-      "confidence": 0.95
-    }
-  },
-  {
-    "finding_id": "F002",
-    "cluster_id": "CL002",
-    "title": "Outdated Package",
-    "severity": "medium",
-    "cvss": 5.5,
-    "asset": {
-      "id": "internal-worker-01",
-      "criticality": 0.5,
-      "internet_exposed": false,
-      "environment": "testing"
+    {
+      "finding_id": "SYN-002",
+      "title": "Privilege Escalation via Insecure Deserialization",
+      "severity": "high",
+      "cve": "CVE-2023-88888",
+      "cvss": 7.8,
+      "asset": {
+        "id": "db-backend-prod-02",
+        "criticality": 0.9,
+        "internet_exposed": false,
+        "environment": "production"
+      },
+      "validation": {
+        "status": "CONFIRMED",
+        "confidence": 0.85
+      }
     },
-    "validation": {
-      "status": "INCONCLUSIVE",
-      "confidence": 0.6
+    {
+      "finding_id": "SYN-003",
+      "title": "Cross-Site Scripting (XSS) in User Profile",
+      "severity": "medium",
+      "cve": "CVE-2023-77777",
+      "cvss": 5.4,
+      "asset": {
+        "id": "api-staging-03",
+        "criticality": 0.6,
+        "internet_exposed": true,
+        "environment": "staging"
+      },
+      "validation": {
+        "status": "INCONCLUSIVE",
+        "confidence": 0.50
+      }
+    },
+    {
+      "finding_id": "SYN-004",
+      "title": "Information Disclosure in Error Pages",
+      "severity": "low",
+      "cve": "CVE-2023-66666",
+      "cvss": 3.1,
+      "asset": {
+        "id": "sandbox-dev-04",
+        "criticality": 0.2,
+        "internet_exposed": false,
+        "environment": "development"
+      },
+      "validation": {
+        "status": "NOT_CONFIRMED",
+        "confidence": 0.10
+      }
+    },
+    {
+      "finding_id": "SYN-005",
+      "title": "Hardcoded Service Credentials in Source Code",
+      "severity": "critical",
+      "asset": {
+        "id": "ci-runner-prod-05",
+        "criticality": 0.8,
+        "internet_exposed": false,
+        "environment": "production"
+      },
+      "validation": {
+        "status": "CONFIRMED",
+        "confidence": 0.99
+      }
+    },
+    {
+      "finding_id": "SYN-006",
+      "title": "Missing Security Headers",
+      "severity": "informational",
+      "cve": "CVE-2023-55555",
+      "cvss": 0.0,
+      "asset": {
+        "id": "legacy-app-test-06",
+        "criticality": 0.4,
+        "internet_exposed": false,
+        "environment": "testing"
+      },
+      "validation": {
+        "status": "UNAVAILABLE",
+        "confidence": 0.0
+      }
     }
-  }
-]
+  ]
+}
