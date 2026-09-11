@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build outputs / caches
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# environment / secrets
+.env
+.env.*
+!.env.example
+
+# os / editor / misc
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.pem
+npm-debug.log*
