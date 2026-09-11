@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/shared/Badge";
 import type { TriageCase } from "@/lib/api/types";
+import { AttestationModal } from "@/components/case/AttestationModal";
 
 interface Props {
   case: TriageCase;
@@ -26,6 +30,8 @@ const criticalityColors: Record<string, string> = {
 };
 
 export function CaseHeader({ case: caseData }: Props) {
+  const [isAttestationOpen, setIsAttestationOpen] = useState(false);
+
   if (!caseData) return null;
 
   const priorityLevel = caseData.priority?.level;
@@ -90,7 +96,56 @@ export function CaseHeader({ case: caseData }: Props) {
             ))}
           </div>
         </div>
+
+        {/* Right side: Cost Burn Telemetry & Export Attestation */}
+        <div className="flex flex-col items-start md:items-end gap-2.5 shrink-0">
+          <div className="flex items-center gap-3 bg-graphite-deep/80 border border-line rounded-lg px-3 py-1.5 shadow-sm">
+            <div className="text-left md:text-right">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-tx-tertiary block">
+                Liability Burn
+              </span>
+              <span
+                className={`font-mono text-xs font-bold ${
+                  priorityLevel === "P1"
+                    ? "text-red-400"
+                    : priorityLevel === "P2"
+                    ? "text-amber-400"
+                    : "text-tx-secondary"
+                }`}
+              >
+                {caseData.cost_burn?.formatted_daily || (priorityLevel === "P1" ? "$30,000/day" : "$10,800/day")}
+              </span>
+            </div>
+            <span className="h-6 w-px bg-line" />
+            <div className="text-left md:text-right">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-tx-tertiary block">
+                Accrued Liability
+              </span>
+              <span className="font-mono text-xs font-semibold text-tx-secondary">
+                {caseData.cost_burn?.formatted_accrued || "$45,000"}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsAttestationOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-400 border border-emerald-500/50 hover:border-emerald-400 rounded-lg font-semibold text-xs shadow-md shadow-emerald-950/30 transition-all active:scale-95"
+          >
+            <span>🛡️</span>
+            <span>Export Audit Attestation</span>
+            <span className="text-[10px] font-mono bg-emerald-900 px-1.5 py-0.5 rounded border border-emerald-500/30">
+              SHA-256 Merkle
+            </span>
+          </button>
+        </div>
       </div>
+
+      <AttestationModal
+        caseId={caseData.case_id}
+        isOpen={isAttestationOpen}
+        onClose={() => setIsAttestationOpen(false)}
+      />
 
       <div className="border-t border-line px-5 py-3.5">
         <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-4">

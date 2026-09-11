@@ -8,6 +8,7 @@ All routes operate on a single shared store seeded from fixtures and
 enriched with real ingestion + risk-engine output.
 """
 
+from contextlib import asynccontextmanager
 import json
 import os
 from pathlib import Path
@@ -22,16 +23,29 @@ from backend.app.store import init_store, get_pipeline_meta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_store()
+    yield
+
+
 app = FastAPI(
     title="CyberYukti API",
     description="Autonomous Vulnerability Triage & Evidence Engine (PS16)",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
-# CORS: explicit origins (fixes person1's wildcard + credentials combo)
+# CORS: allow localhost, 127.0.0.1, and [::1] on any port
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://[::1]:3000",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,6 +70,13 @@ def read_root():
         "pipeline_source": meta.get("source"),
         "docs_url": "/docs",
     }
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "cyberyukti-backend"}
+
 
 
 # ---------------------------------------------------------------------------
@@ -131,13 +152,34 @@ from backend.app.api.ai_routes import router as ai_router  # noqa: E402
 from backend.app.api.audit_routes import router as audit_router  # noqa: E402
 from backend.app.api.dashboard_routes import router as dashboard_router  # noqa: E402
 from backend.app.analysis.routes import router as analysis_router  # noqa: E402
-
+from backend.app.api.bulk_routes import router as bulk_router  # noqa: E402
+from backend.app.api.attestation_routes import router as attestation_router  # noqa: E402
+from backend.app.api.chat_routes import router as chat_router  # noqa: E402
 app.include_router(case_router, prefix="/api/cases", tags=["cases"])
 app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
-app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+app.include_router(attestation_router, prefix="/api/cases", tags=["attestation"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
+app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+app.include_router(chat_router, prefix="/api/ai", tags=["ai-chat"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(bulk_router, prefix="/api/v1/scan", tags=["bulk-ingestion"])
 app.include_router(analysis_router, prefix="", tags=["analyses"])
+
+# ---------------------------------------------------------------------------
+# Evidence Validation Engine (Person 2)
+# ---------------------------------------------------------------------------
+import sys  # noqa: E402
+
+EE_PATH = BASE_DIR / "services" / "evidence-engine"
+if str(EE_PATH) not in sys.path:
+    sys.path.insert(0, str(EE_PATH))
+
+try:
+    from api.server import app as evidence_engine_app  # noqa: E402
+
+    app.mount("/api/evidence-engine", evidence_engine_app)
+except Exception:
+    pass
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +189,7 @@ app.include_router(analysis_router, prefix="", tags=["analyses"])
 # and embedded next to the backend so ONE process serves both the UI and the
 # API on the same port. In normal development (repo checkout) this folder does
 # not exist and everything below is inert — dev workflow is unchanged.
+# NOTE: mounted LAST so it can never shadow the API routes above.
 
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
@@ -180,7 +223,6 @@ if _STATIC_UI_DIR.is_dir():
     # Static assets first (/_next/*), then HTML page routes with clean URLs.
     app.mount("/_next", StaticFiles(directory=_STATIC_UI_DIR / "_next"), name="ui-assets")
     app.mount("/", StaticFiles(directory=_STATIC_UI_DIR, html=True), name="packaged-ui")
-
 
 if __name__ == "__main__":
     import uvicorn

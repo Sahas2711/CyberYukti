@@ -7,6 +7,8 @@ import { Tooltip } from "@/components/shared/Tooltip";
 
 interface Props {
   evidence: ValidationResult;
+  onValidate?: (targetOverride?: string) => Promise<void>;
+  validating?: boolean;
 }
 
 const TRUNCATE_AT = 200;
@@ -102,7 +104,9 @@ function inconclusiveReasons(evidence: ValidationResult): string[] {
   return reasons;
 }
 
-export function EvidencePanel({ evidence }: Props) {
+export function EvidencePanel({ evidence, onValidate, validating = false }: Props) {
+  const [selectedTarget, setSelectedTarget] = useState<string>("");
+
   if (!evidence) return null;
 
   const observations = evidence.observations ?? [];
@@ -128,12 +132,96 @@ export function EvidencePanel({ evidence }: Props) {
             </span>
           )}
         </div>
-        <Tooltip content={CONFIDENCE_TOOLTIP}>
-          <ValidationBadge
-            status={evidence.status}
-            confidence={evidence.confidence}
-          />
-        </Tooltip>
+        <div className="flex flex-wrap items-center gap-2">
+          {onValidate && (
+            <div className="flex items-center gap-1.5">
+              <select
+                aria-label="Validation probe target"
+                value={selectedTarget}
+                onChange={(e) => setSelectedTarget(e.target.value)}
+                disabled={validating}
+                className="rounded-sm border border-line bg-black/50 px-2 py-1 font-mono text-[11px] text-tx-secondary focus:border-accent focus:outline-none"
+              >
+                <option value="">Current Asset Target</option>
+                <option value="shop-api-01">Lab: shop-api-01 (Vulnerable)</option>
+                <option value="shop-api-01-patched">Lab: shop-api-01-patched (Patched)</option>
+                <option value="db-cluster-01">Lab: db-cluster-01 (Hardened)</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => void onValidate(selectedTarget || undefined)}
+                disabled={validating}
+                className="flex items-center gap-1.5 rounded-sm border border-accent/60 bg-accent-soft px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {validating ? (
+                  <>
+                    <svg
+                      className="h-3 w-3 animate-spin text-accent"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
+                    </svg>
+                    <span>Probing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>⚡ Run Live Probe</span>
+                  </>
+                )}
+              </button>
+
+              {/* Quick Sandbox Target Shortcuts */}
+              <div className="hidden lg:flex items-center gap-1 border-l border-line pl-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTarget("shop-api-01");
+                    void onValidate("shop-api-01");
+                  }}
+                  disabled={validating}
+                  className="inline-flex items-center gap-1 rounded-sm border border-red-500/40 bg-red-950/40 px-2 py-1 font-mono text-[10px] font-medium text-red-300 hover:bg-red-900/60 transition-colors disabled:opacity-50"
+                  title="Run live probe against vulnerable lab target (proves exploitability)"
+                >
+                  <span>🔴</span>
+                  <span>Vulnerable (shop-api-01)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTarget("shop-api-01-patched");
+                    void onValidate("shop-api-01-patched");
+                  }}
+                  disabled={validating}
+                  className="inline-flex items-center gap-1 rounded-sm border border-emerald-500/40 bg-emerald-950/40 px-2 py-1 font-mono text-[10px] font-medium text-emerald-300 hover:bg-emerald-900/60 transition-colors disabled:opacity-50"
+                  title="Run live probe against patched lab target (verifies fix & demotes priority)"
+                >
+                  <span>🟢</span>
+                  <span>Patched (shop-api-01-patched)</span>
+                </button>
+              </div>
+            </div>
+          )}
+          <Tooltip content={CONFIDENCE_TOOLTIP}>
+            <ValidationBadge
+              status={evidence.status}
+              confidence={evidence.confidence}
+            />
+          </Tooltip>
+        </div>
       </header>
 
       <dl className="grid grid-cols-1 gap-x-8 gap-y-3 border-b border-line px-4 py-3 sm:grid-cols-3">

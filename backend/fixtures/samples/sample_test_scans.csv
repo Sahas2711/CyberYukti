@@ -1,0 +1,19 @@
+Title,Severity,Asset,CVE,CWE,Tool,Path,Endpoint,Package,InstalledVersion,FixedVersion,Description
+Remote Code Execution via Apache Log4j JNDI Lookup,CRITICAL,auth-service-prod:latest,CVE-2021-44228,CWE-502,trivy,pom.xml,,org.apache.logging.log4j:log4j-core,2.14.1,2.17.1,Unauthenticated RCE via LDAP JNDI lookup string
+Remote Code Execution via Apache Log4j JNDI Lookup,CRITICAL,auth-service-prod:latest,CVE-2021-44228,CWE-502,trivy,pom.xml,,org.apache.logging.log4j:log4j-core,2.14.1,2.17.1,Exact duplicate scanner alert from secondary container node
+Spring Framework RCE via Data Binding (Spring4Shell),CRITICAL,order-service-api:v2,CVE-2022-22965,CWE-94,trivy,build.gradle,,org.springframework:spring-beans,5.3.17,5.3.18,Spring4Shell remote code execution vulnerability
+Spring Framework RCE via Data Binding (Spring4Shell),CRITICAL,order-service-api:v2,CVE-2022-22965,CWE-94,semgrep,services/order_controller.py,,,org.springframework:spring-beans,,Spring MVC controller binding untrusted input
+Path Traversal in Static File Serving Controller,HIGH,frontend-proxy:v1,,CWE-22,semgrep,handlers/static.py,/api/static/download,,,Source code file handler reading arbitrary path without sanitization
+Path Traversal in Static File Serving Controller,HIGH,frontend-proxy:v1,,CWE-22,nuclei,,/api/static/download,,,Runtime DAST probe confirmed /etc/passwd disclosure via ../ traversal
+SQL Injection in Payment Search Parameter,HIGH,payment-gateway:v2.4,,CWE-89,semgrep,repositories/payment.go,/api/v2/payments/search,,,Raw string concatenation in SQL query execution
+SQL Injection in Payment Search Parameter,HIGH,payment-gateway:v2.4,,CWE-89,nuclei,,/api/v2/payments/search,,,DAST active payload boolean-based blind SQLi confirmed
+SQL Injection in User Profile Lookup,HIGH,user-service-prod:v1,,CWE-89,semgrep,controllers/user.py,/api/v1/users/profile,,,Generic CWE-89 in distinct location - MUST NOT merge with payment search
+Server-Side Request Forgery (SSRF) in Webhook Dispatcher,HIGH,notification-worker:v2,CVE-2023-38606,CWE-918,nuclei,,/api/v1/webhooks/test,,,Out-of-band DNS interaction confirmed SSRF to internal metadata
+Hardcoded Production JWT Signing Key,HIGH,auth-service-prod:latest,,CWE-798,semgrep,auth/jwt_validator.ts,,,,Hardcoded 256-bit secret string detected in source code
+Insecure Deserialization in Redis Session Serializer,MEDIUM,session-store-cache:latest,CVE-2022-42889,CWE-502,trivy,pom.xml,,commons-text,1.9,1.10.0,Apache Commons Text remote code execution via script interpolation
+Cross-Site Scripting (Reflected XSS) in Audit Log Viewer,MEDIUM,customer-portal-frontend,,CWE-79,semgrep,views/audit_viewer.tsx,/portal/audit/logs,,,Unescaped query parameter rendered in DOM innerHTML
+Cross-Site Scripting (Reflected XSS) in Audit Log Viewer,MEDIUM,customer-portal-frontend,,CWE-79,nuclei,,/portal/audit/logs,,,DAST payload <script>alert(1)</script> reflected in response
+Prototype Pollution in follow-redirects,MEDIUM,customer-portal-frontend,CVE-2023-26159,CWE-1321,trivy,package-lock.json,,follow-redirects,1.15.1,1.15.4,Outdated dependency vulnerable to object prototype override
+CORS Misconfiguration Allowing Arbitrary Origin,LOW,k8s-ingress-controller,,CWE-346,nuclei,,/api/v1/public/config,,,Access-Control-Allow-Origin set to wildcard with credentials enabled
+Verbose Stack Trace Information Leak,LOW,analytics-reporting-engine,,CWE-209,semgrep,middleware/error_handler.py,/api/health/diagnostics,,,Debug mode enabled exposing internal database query stack traces
+TLS 1.0 and 1.1 Weak Protocol Version Supported,INFO,k8s-ingress-controller,,CWE-327,nuclei,,https://ingress.cyberyukti.local,,,Deprecated TLS version accepted on public load balancer listener

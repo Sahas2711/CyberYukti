@@ -1,5 +1,6 @@
 import { LoadingState } from "@/components/shared/LoadingState";
 import type { AIAnalysis } from "@/lib/api/types";
+import { RichMarkdownText } from "@/components/shared/RichMarkdownText";
 
 interface Props {
   analysis: AIAnalysis | null;
@@ -23,14 +24,16 @@ function SectionList({
       {list.length === 0 ? (
         <p className="text-xs text-tx-tertiary">{emptyText}</p>
       ) : (
-        <ul className="space-y-1 text-sm text-tx-secondary">
-          {list.map((item) => (
-            <li key={item} className="flex gap-2">
-              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-line-strong" />
-              <span>{item}</span>
-            </li>
+        <div className="space-y-1.5 text-xs text-tx-secondary">
+          {list.map((item, idx) => (
+            <div key={idx} className="flex gap-2 items-start">
+              <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60" />
+              <div className="flex-1">
+                <RichMarkdownText content={item} />
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );
@@ -46,9 +49,21 @@ export function AIAnalysisPanel({ analysis, onAnalyze, loading }: Props) {
             AI-generated explanation — supports, never replaces, the analyst decision
           </p>
         </div>
-        <span className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[3px] text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-          AI-generated
-        </span>
+        <div className="flex items-center gap-2">
+          {analysis && (
+            <button
+              type="button"
+              onClick={onAnalyze}
+              disabled={loading}
+              className="rounded-sm border border-accent/40 bg-accent-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+            >
+              {loading ? "Re-analyzing..." : "Re-run analysis"}
+            </button>
+          )}
+          <span className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[3px] text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+            AI-generated
+          </span>
+        </div>
       </header>
 
       {loading ? (
@@ -74,9 +89,9 @@ export function AIAnalysisPanel({ analysis, onAnalyze, loading }: Props) {
         <div className="space-y-5 p-4">
           <section>
             <h3 className="hk-label mb-1.5">Summary</h3>
-            <p className="border-l-2 border-accent-dim pl-3 text-sm leading-relaxed text-tx-primary">
-              {analysis.summary}
-            </p>
+            <div className="border-l-2 border-accent-dim pl-3 text-xs sm:text-sm leading-relaxed text-tx-primary">
+              <RichMarkdownText content={analysis.summary} />
+            </div>
           </section>
 
           <SectionList title="Why this matters" items={[analysis.why_it_matters]} />

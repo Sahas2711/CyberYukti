@@ -14,8 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -25,6 +23,11 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Explicitly ensure frontend/lib is never ignored
+!frontend/lib/
+!frontend/lib/**
+
 
 # PyInstaller
 *.manifest
@@ -72,4 +75,14 @@ venv.bak/
 .DS_Store
 Thumbs.db
 desktop.ini
-backend/VERSION.json
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+.next/
+*.tsbuildinfo
+*.log
+
+# CyberYukti runtime artifacts (recreated at runtime)
+backend/analyses/

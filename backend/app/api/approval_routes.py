@@ -24,12 +24,13 @@ async def approve_case(case_id: str, request: Request):
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
-    body = await request.json()
-    analyst_id = body.get("analyst_id")
-    reason = body.get("reason")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
 
-    if not analyst_id:
-        raise HTTPException(status_code=400, detail="analyst_id is required")
+    analyst_id = body.get("analyst_id") or "analyst-1"
+    reason = body.get("reason") or "Approved by analyst"
 
     prev = dict(case["approval"])
     if prev["status"] not in ("PENDING", "REJECTED", "OVERRIDDEN"):
@@ -46,12 +47,14 @@ async def reject_case(case_id: str, request: Request):
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
-    body = await request.json()
-    analyst_id = body.get("analyst_id")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    analyst_id = body.get("analyst_id") or "analyst-1"
     reason = body.get("reason")
 
-    if not analyst_id:
-        raise HTTPException(status_code=400, detail="analyst_id is required")
     if not reason:
         raise HTTPException(status_code=400, detail="reason is required for reject")
 
@@ -70,17 +73,17 @@ async def override_case(case_id: str, request: Request):
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
-    body = await request.json()
-    analyst_id = body.get("analyst_id")
-    new_priority = body.get("override_priority")
-    reason = body.get("reason")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
 
-    if not analyst_id:
-        raise HTTPException(status_code=400, detail="analyst_id is required")
+    analyst_id = body.get("analyst_id") or "analyst-1"
+    new_priority = body.get("override_priority")
+    reason = body.get("reason") or "Priority overridden by analyst"
+
     if not new_priority or new_priority not in ("P1", "P2", "P3", "P4"):
         raise HTTPException(status_code=400, detail="override_priority must be P1, P2, P3, or P4")
-    if not reason:
-        raise HTTPException(status_code=400, detail="reason is required for override")
 
     prev = dict(case["approval"])
     old_priority = case["priority"]["level"]

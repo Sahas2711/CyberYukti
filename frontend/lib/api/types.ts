@@ -88,6 +88,15 @@ export interface TriageCase {
   ai_analysis: AIAnalysis | null;
   approval: ApprovalState;
   audit: AuditEvent[];
+  cost_burn?: {
+    hourly_burn: number;
+    daily_burn: number;
+    formatted_hourly: string;
+    formatted_daily: string;
+    accrued_burn: number;
+    formatted_accrued: string;
+    sla_window_hours: number;
+  };
 }
 
 export interface DashboardStats {
@@ -101,6 +110,72 @@ export interface DashboardStats {
   p3: number;
   p4: number;
   ingestion?: IngestionSummary;
+  liability_burn?: {
+    daily_burn: number;
+    accrued_liability: number;
+    formatted_daily: string;
+    formatted_accrued: string;
+  };
+}
+
+export interface AttestationReceipt {
+  certificate_id: string;
+  case_id: string;
+  cluster_id: string;
+  title: string;
+  issuer: string;
+  issued_at: string;
+  digital_signature: string;
+  merkle_root: string;
+  leaves: {
+    scanner_evidence_hash: string;
+    probe_execution_hash: string;
+    risk_scoring_hash: string;
+    analyst_signature_hash: string;
+  };
+  merkle_tree: {
+    leaf_count: number;
+    tree_depth: number;
+    root: string;
+  };
+  state_transitions: Array<{
+    step: number;
+    name: string;
+    hash: string;
+    summary: string;
+    data: Record<string, unknown>;
+  }>;
+  compliance_notes: string[];
+}
+
+export interface AttestationVerificationResult {
+  valid: boolean;
+  merkle_root_matches?: boolean;
+  digital_signature_matches?: boolean;
+  computed_merkle_root?: string;
+  expected_merkle_root?: string;
+  verified_at?: string;
+  status?: string;
+  reason?: string;
+}
+
+export interface RemediationPlaybook {
+  case_id: string;
+  cluster_id: string;
+  title: string;
+  cve: string;
+  cwe: string;
+  priority: string;
+  target_asset: string;
+  daily_burn: string;
+  root_cause: string;
+  virtual_patch_waf: string;
+  permanent_code_patch: string;
+  verification_probe: string;
+  expected_verification: string;
+  estimated_hours: number;
+  liability_saved_usd: number;
+  formatted_savings: string;
 }
 
 export interface IngestionSummary {
@@ -338,4 +413,43 @@ export interface AnalysisReportResponse {
   deduplication_summary: Record<string, unknown>;
   correlation_summary: Record<string, unknown>;
   incident_clusters: Record<string, unknown>[];
+}
+export interface BulkPipelineSummary {
+  pipeline_name: string;
+  total_raw_findings: number;
+  total_clusters: number;
+  noise_reduction_percentage: number;
+  execution_time_ms: number;
+  total_assets_covered: number;
+  cross_tool_correlated_count: number;
+  breakdown_by_tool: Record<string, number>;
+  breakdown_by_severity: Record<string, number>;
+  breakdown_by_priority: Record<string, number>;
+  breakdown_by_scan_type: Record<string, number>;
+}
+
+export interface ScoredClusterItem {
+  cluster_id: string;
+  title: string;
+  primary_cve?: string | null;
+  root_cause_cwe?: string | null;
+  target_asset: string;
+  affected_component: string;
+  normalized_route?: string | null;
+  raw_findings_count: number;
+  participating_tools: string[];
+  representative_severity: string;
+  priority: "P1" | "P2" | "P3" | "P4";
+  final_score: number;
+  sla: string;
+  factors: Record<string, number>;
+  reasons?: string[];
+}
+
+export interface BulkExactReportResponse {
+  status: string;
+  summary: BulkPipelineSummary;
+  clusters_sample: ScoredClusterItem[];
+  all_clusters_count: number;
+  top_actionable_p1_p2: ScoredClusterItem[];
 }

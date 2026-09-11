@@ -8,6 +8,7 @@ import type {
   IngestionCluster,
   IngestionSummary,
 } from "@/lib/api/types";
+import { ThreatTicker } from "@/components/dashboard/ThreatTicker";
 import { KpiStrip } from "@/components/dashboard/KpiStrip";
 import { IngestionPanel } from "@/components/dashboard/IngestionPanel";
 import { ClustersPanel } from "@/components/dashboard/ClustersPanel";
@@ -124,6 +125,8 @@ export default function DashboardPage() {
               }.`}
         </p>
       </section>
+
+      <ThreatTicker />
 
       <KpiStrip stats={stats} pending={pending} />
 

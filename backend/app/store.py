@@ -188,6 +188,49 @@ def _normalize_env(env: Any) -> str:
     return mapping.get(str(env).lower(), "unknown")
 
 
+def compute_cost_burn(case: dict) -> dict:
+    """Calculates financial liability burn rate ($/hour and $/day) and accrued liability.
+
+    Formula combines:
+    - Base SLA rate by priority (P1: $1,250/hr, P2: $450/hr, P3: $120/hr, P4: $25/hr)
+    - Asset criticality multiplier (1.0x - 1.5x)
+    - Internet exposure multiplier (1.3x)
+    - Active CISA KEV exploitation multiplier (1.4x)
+    """
+    priority_level = (case.get("priority") or {}).get("level", "P2").upper()
+    asset = case.get("asset") or {}
+    threat_intel = case.get("threat_intelligence") or {}
+
+    base_rates = {
+        "P1": 1250.0,
+        "P2": 450.0,
+        "P3": 120.0,
+        "P4": 25.0,
+    }
+    base_rate = base_rates.get(priority_level, 450.0)
+
+    crit_str = str(asset.get("criticality", "medium")).lower()
+    crit_mults = {"critical": 1.5, "high": 1.25, "medium": 1.0, "low": 0.7}
+    crit_mult = crit_mults.get(crit_str, 1.0)
+
+    exposed_mult = 1.3 if asset.get("internet_exposed") else 1.0
+    kev_mult = 1.4 if threat_intel.get("cisa_kev") else 1.0
+
+    hourly_burn = round(base_rate * crit_mult * exposed_mult * kev_mult, 2)
+    daily_burn = round(hourly_burn * 24, 2)
+    accrued_burn = round(hourly_burn * 36, 2)
+
+    return {
+        "hourly_burn": hourly_burn,
+        "daily_burn": daily_burn,
+        "formatted_hourly": f"${hourly_burn:,.0f}/hr",
+        "formatted_daily": f"${daily_burn:,.0f}/day",
+        "accrued_burn": accrued_burn,
+        "formatted_accrued": f"${accrued_burn:,.0f}",
+        "sla_window_hours": 4 if priority_level == "P1" else (24 if priority_level == "P2" else 72),
+    }
+
+
 def init_store() -> None:
     """Hydrate the store from fixtures, then enrich with real pipeline data."""
     with _LOCK:
@@ -198,6 +241,8 @@ def init_store() -> None:
             _cases_store[case["case_id"] if isinstance(case, dict) else case.case_id] = dumped
         _apply_ingestion_clusters()
         _recompute_priorities()
+        for case in _cases_store.values():
+            case["cost_burn"] = compute_cost_burn(case)
 
 
 def ensure_audit(case_id: str) -> List[dict]:
@@ -238,12 +283,18 @@ def add_audit_event(
 
 def get_cases() -> List[dict]:
     with _LOCK:
+        for case in _cases_store.values():
+            if "cost_burn" not in case:
+                case["cost_burn"] = compute_cost_burn(case)
         return list(_cases_store.values())
 
 
 def get_case(case_id: str) -> Optional[dict]:
     with _LOCK:
-        return _cases_store.get(case_id)
+        case = _cases_store.get(case_id)
+        if case and "cost_burn" not in case:
+            case["cost_burn"] = compute_cost_burn(case)
+        return case
 
 
 def get_pipeline_meta() -> Dict[str, Any]:
@@ -254,3 +305,246 @@ def get_pipeline_meta() -> Dict[str, Any]:
 def get_clusters() -> List[dict]:
     with _LOCK:
         return list(_clusters_store.values())
+
+
+def validate_case_live(case_id: str, target_override: Optional[str] = None) -> Optional[dict]:
+    """Execute live validation probe for a case and dynamically update priority and audit trail."""
+    with _LOCK:
+        case = _cases_store.get(case_id)
+        if not case:
+            return None
+
+        from backend.app.validator_bridge import execute_case_validation
+
+        prev_evidence = dict(case.get("evidence", {}))
+        prev_priority = dict(case.get("priority", {}))
+
+        # Execute live probe against controlled lab target
+        live_evidence = execute_case_validation(case, target_override)
+        case["evidence"] = live_evidence
+
+        # Recalculate priority dynamically based on fresh evidence status
+        _recompute_priorities()
+        case["cost_burn"] = compute_cost_burn(case)
+
+        # Record audit event
+        add_audit_event(
+            case_id=case_id,
+            actor="evidence-engine",
+            actor_id="validator-live",
+            action="EVIDENCE_VALIDATED",
+            previous_state={
+                "evidence_status": prev_evidence.get("status"),
+                "priority": prev_priority.get("level"),
+                "score": prev_priority.get("score"),
+            },
+            new_state={
+                "evidence_status": live_evidence.get("status"),
+                "priority": case.get("priority", {}).get("level"),
+                "score": case.get("priority", {}).get("score"),
+            },
+            metadata={
+                "confidence": live_evidence.get("confidence"),
+                "reasons": live_evidence.get("reasons", []),
+                "target": target_override or case.get("asset", {}).get("asset_id"),
+            },
+        )
+        return case
+
+
+def create_vulnerability_case(payload: dict) -> dict:
+    """Creates a new vulnerability case from manual reporting or scanner intake."""
+    with _LOCK:
+        case_idx = len(_cases_store) + 1
+        case_id = f"CASE-{case_idx:03d}"
+        cluster_id = f"CLUST-{case_idx:03d}"
+
+        title = payload.get("title") or "Unnamed Vulnerability"
+        severity = (payload.get("severity") or "high").lower()
+        cve = payload.get("cve") or None
+        cwe = payload.get("cwe") or None
+        tool = payload.get("tool_name") or "manual-analyst"
+        asset_name = payload.get("asset_name") or "core-service"
+        location = payload.get("target_location") or "/api"
+        description = payload.get("description") or "Reported via CyberYukti Intake Console"
+        evidence_payload = payload.get("evidence_payload") or "N/A"
+        internet_exposed = bool(payload.get("internet_exposed", True))
+        criticality = payload.get("criticality") or "high"
+
+        # Calculate Person 3 risk score dynamically
+        finding_input = FindingInput(
+            finding_id=case_id,
+            cluster_id=cluster_id,
+            title=title,
+            severity=severity if severity in ("critical", "high", "medium", "low", "informational") else "high",
+            cve=cve,
+            cvss=9.5 if severity == "critical" else (7.8 if severity == "high" else 5.2),
+            asset=AssetContext(
+                id=asset_name,
+                criticality=_criticality_to_float(criticality),
+                internet_exposed=internet_exposed,
+                environment="production",
+            ),
+            validation=RiskValidationResult(
+                status="CONFIRMED" if evidence_payload and evidence_payload != "N/A" else "INCONCLUSIVE",
+                confidence=0.92 if evidence_payload and evidence_payload != "N/A" else 0.50,
+            ),
+        )
+        risk_result = calculate_risk_score(finding_input)
+
+        new_case = {
+            "case_id": case_id,
+            "cluster_id": cluster_id,
+            "title": title,
+            "sources": [tool],
+            "finding_count": 1,
+            "asset": {
+                "asset_id": asset_name,
+                "hostname": asset_name,
+                "environment": "production",
+                "internet_exposed": internet_exposed,
+                "criticality": criticality,
+            },
+            "vulnerability": {
+                "cve": cve,
+                "cwe": cwe,
+                "scanner": tool,
+                "scanner_rule_id": cwe or cve or "custom-rule",
+                "description": description,
+                "location": location,
+            },
+            "evidence": {
+                "cluster_id": cluster_id,
+                "status": "CONFIRMED" if evidence_payload and evidence_payload != "N/A" else "INCONCLUSIVE",
+                "confidence": 0.92 if evidence_payload and evidence_payload != "N/A" else 0.50,
+                "observations": [
+                    {
+                        "observation_id": f"obs-{case_idx}",
+                        "type": "exploit_probe" if evidence_payload and evidence_payload != "N/A" else "static_analysis",
+                        "target": location,
+                        "observed_value": str(evidence_payload)[:200],
+                        "expected_value": "Secure response without leakage",
+                        "method": tool,
+                    }
+                ],
+                "validated_at": _now_iso(),
+                "validator_version": "evidence-engine-2.0.0",
+            },
+            "priority": {
+                "cluster_id": cluster_id,
+                "score": round(risk_result.risk_score * 100, 1),
+                "level": risk_result.priority,
+                "factors": risk_result.factors,
+                "formula_version": "risk-engine-1.0.0",
+            },
+            "threat_intelligence": {
+                "cve": cve,
+                "cwe": cwe,
+                "cvss": 9.5 if severity == "critical" else (7.8 if severity == "high" else 5.2),
+                "epss": 0.88 if severity == "critical" else 0.45,
+                "cisa_kev": True if severity == "critical" else False,
+            },
+            "approval": {
+                "status": "PENDING",
+                "decided_by": None,
+                "decided_at": None,
+                "reason": None,
+            },
+            "audit": [
+                {
+                    "event_id": f"evt-{case_idx}-01",
+                    "case_id": case_id,
+                    "timestamp": _now_iso(),
+                    "actor": "analyst-1",
+                    "actor_id": "SOC-ANALYST",
+                    "action": "VULNERABILITY_REPORTED",
+                    "previous_state": None,
+                    "new_state": {"status": "PENDING", "priority": risk_result.priority},
+                    "metadata": {"source": tool, "location": location},
+                    "prev_hash": None,
+                }
+            ],
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+        }
+
+        new_case["cost_burn"] = compute_cost_burn(new_case)
+        _cases_store[case_id] = new_case
+        _audit_store[case_id] = new_case["audit"]
+        return new_case
+
+
+def sync_bulk_clusters(clusters: List[Any], scored_clusters: List[dict], summary: dict) -> None:
+    """Syncs results from high-scale ingestion / 10k benchmark into shared store and cases."""
+    with _LOCK:
+        _pipeline_meta["ingested"] = True
+        _pipeline_meta["summary"] = summary
+        _pipeline_meta["source"] = summary.get("pipeline_name", "bulk-pipeline")
+
+        for c in clusters:
+            cdump = c.model_dump() if hasattr(c, "model_dump") else c
+            _clusters_store[cdump["cluster_id"]] = cdump
+
+        # Sync top actionable clusters into cases store
+        top_clusters = [c for c in scored_clusters if c.get("priority") in ("P1", "P2", "P3")][:30]
+        for idx, sc in enumerate(top_clusters):
+            cid = f"CASE-BULK-{idx + 1:03d}"
+            p_val = sc.get("priority", "P2")
+            score = float(sc.get("final_score", 70.0))
+            asset_name = sc.get("target_asset", "enterprise-asset")
+
+            new_case = {
+                "case_id": cid,
+                "cluster_id": sc.get("cluster_id"),
+                "title": sc.get("title", "Actionable Cluster"),
+                "sources": sc.get("participating_tools", ["trivy"]),
+                "finding_count": sc.get("raw_findings_count", 1),
+                "asset": {
+                    "asset_id": asset_name,
+                    "hostname": asset_name,
+                    "environment": "production",
+                    "internet_exposed": True,
+                    "criticality": "critical" if p_val == "P1" else "high",
+                },
+                "vulnerability": {
+                    "cve": sc.get("primary_cve"),
+                    "cwe": sc.get("root_cause_cwe"),
+                    "scanner": (sc.get("participating_tools") or ["multi-scanner"])[0],
+                    "scanner_rule_id": sc.get("primary_cve") or sc.get("root_cause_cwe") or "rule-01",
+                    "description": f"Deduplicated cluster of {sc.get('raw_findings_count')} raw findings across {asset_name}",
+                    "location": sc.get("normalized_route") or sc.get("affected_component") or "/api",
+                },
+                "evidence": {
+                    "status": "CONFIRMED" if len(sc.get("participating_tools", [])) > 1 else "INCONCLUSIVE",
+                    "confidence": 0.94 if len(sc.get("participating_tools", [])) > 1 else 0.60,
+                    "reproduction_steps": f"Cross-tool correlation verified between: {', '.join(sc.get('participating_tools', []))}",
+                    "proof_payload": f"Corroborated by {sc.get('raw_findings_count')} raw findings across pipeline",
+                },
+                "priority": {
+                    "score": score,
+                    "level": p_val,
+                    "factors": sc.get("factors", {}),
+                    "formula_version": "risk-engine-1.0.0",
+                },
+                "threat_intelligence": {
+                    "cve": sc.get("primary_cve"),
+                    "cwe": sc.get("root_cause_cwe"),
+                    "cvss": 9.8 if p_val == "P1" else 7.8,
+                    "epss": 0.91 if p_val == "P1" else 0.52,
+                    "cisa_kev": True if p_val == "P1" else False,
+                },
+                "approval": {
+                    "status": "PENDING",
+                    "decided_by": None,
+                    "decided_at": None,
+                    "reason": None,
+                },
+                "audit": [],
+                "created_at": _now_iso(),
+                "updated_at": _now_iso(),
+            }
+            new_case["cost_burn"] = compute_cost_burn(new_case)
+            _cases_store[cid] = new_case
+            _audit_store[cid] = []
+
+

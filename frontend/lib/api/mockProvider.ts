@@ -219,6 +219,7 @@ const ANALYSES: Record<string, AIAnalysis> = {
 export interface Provider {
   listCases(): Promise<TriageCase[]>;
   getCase(id: string): Promise<TriageCase>;
+  validateCase(id: string, targetOverride?: string): Promise<TriageCase>;
   analyzeCase(id: string): Promise<AIAnalysis>;
   approveCase(id: string, reason: string): Promise<TriageCase>;
   rejectCase(id: string, reason: string): Promise<TriageCase>;
@@ -356,6 +357,48 @@ export function createMockProvider(): Provider {
       const result = JSON.parse(JSON.stringify(c));
       result.audit = getAudit(id);
       return result;
+    },
+
+    async validateCase(id: string, targetOverride?: string): Promise<TriageCase> {
+      const c = _cases.find((c) => c.case_id === id);
+      if (!c) throw new Error(`Case ${id} not found`);
+      const prev = { ...c.evidence };
+
+      const isPatched = Boolean(targetOverride && targetOverride.includes("patched"));
+      const status = isPatched ? "NOT_CONFIRMED" : "CONFIRMED";
+      const confidence = isPatched ? 0.88 : 0.95;
+
+      c.evidence = {
+        ...c.evidence,
+        status,
+        confidence,
+        validated_at: new Date().toISOString(),
+      };
+
+      if (isPatched) {
+        c.priority = {
+          ...c.priority,
+          level: "P3",
+          score: Math.min(c.priority.score, 45.0),
+        };
+      }
+
+      const audit = getAudit(id);
+      const prevHash = audit.length > 0 ? audit[audit.length - 1].event_id : undefined;
+      audit.push({
+        event_id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        case_id: id,
+        timestamp: new Date().toISOString(),
+        actor: "system",
+        actor_id: "evidence-validator-engine",
+        action: "EVIDENCE_VALIDATED",
+        previous_state: prev as unknown as Record<string, unknown>,
+        new_state: c.evidence as unknown as Record<string, unknown>,
+        metadata: { target_override: targetOverride, status, confidence },
+        prev_hash: prevHash,
+      });
+
+      return this.getCase(id);
     },
 
     async analyzeCase(id: string): Promise<AIAnalysis> {
