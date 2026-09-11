@@ -1,0 +1,8 @@
+{
+  "packages": {
+    "example-package": "1.2.3",
+    "log4j": "2.14.0",
+    "requests": "2.25.1",
+    "urllib3": "1.26.4"
+  }
+}
