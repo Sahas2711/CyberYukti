@@ -22,6 +22,10 @@ const SECTIONS: NavSection[] = [
     items: [{ href: "/", label: "Dashboard", match: "exact" }],
   },
   {
+    title: "Analysis",
+    items: [{ href: "/analysis", label: "New Analysis", match: "exact" }],
+  },
+  {
     title: "Triage",
     items: [
       { href: "/cases", label: "Cases", match: "cases" },
@@ -40,17 +44,17 @@ export function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  function isActive(item: NavItem): boolean {
-    if (item.match === "exact") return pathname === "/";
-    const onCases = pathname === "/cases";
-    if (item.match === "priority")
-      return onCases && searchParams.get("priority") !== null;
-    if (item.match === "evidence")
-      return onCases && searchParams.get("evidence") !== null;
-    return (
-      onCases && searchParams.get("priority") === null && searchParams.get("evidence") === null
-    );
-  }
+function isActive(item: NavItem): boolean {
+  if (item.match === "exact") return pathname === item.href;
+  const onCases = pathname === "/cases";
+  if (item.match === "priority")
+    return onCases && searchParams.get("priority") !== null;
+  if (item.match === "evidence")
+    return onCases && searchParams.get("evidence") !== null;
+  return (
+    onCases && searchParams.get("priority") === null && searchParams.get("evidence") === null
+  );
+}
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[232px] flex-col border-r border-line bg-graphite lg:flex">

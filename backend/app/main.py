@@ -43,7 +43,9 @@ async def startup() -> None:
     init_store()
 
 
-@app.get("/")
+# Health endpoint lives at /api/health so the packaged static UI (mounted at
+# "/" when backend/static-ui exists) can own the root path.
+@app.get("/api/health")
 def read_root():
     """Health check and service status."""
     meta = get_pipeline_meta()
@@ -128,12 +130,14 @@ from backend.app.api.approval_routes import router as approval_router  # noqa: E
 from backend.app.api.ai_routes import router as ai_router  # noqa: E402
 from backend.app.api.audit_routes import router as audit_router  # noqa: E402
 from backend.app.api.dashboard_routes import router as dashboard_router  # noqa: E402
+from backend.app.analysis.routes import router as analysis_router  # noqa: E402
 
 app.include_router(case_router, prefix="/api/cases", tags=["cases"])
 app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
 app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 app.include_router(audit_router, prefix="/api/cases", tags=["audit"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(analysis_router, prefix="", tags=["analyses"])
 
 
 # ---------------------------------------------------------------------------
@@ -172,14 +176,6 @@ if _STATIC_UI_DIR.is_dir():
     @app.get("/api/build-info", include_in_schema=False)
     def build_info() -> Dict[str, Any]:
         return _build_info()
-
-    @app.get("/", include_in_schema=False)
-    def packaged_ui_root():
-        """Serve the packaged UI shell instead of the API health JSON."""
-        index_file = _STATIC_UI_DIR / "index.html"
-        if index_file.exists():
-            return FileResponse(index_file)
-        return JSONResponse({"app": "CyberYukti", "status": "online"})
 
     # Static assets first (/_next/*), then HTML page routes with clean URLs.
     app.mount("/_next", StaticFiles(directory=_STATIC_UI_DIR / "_next"), name="ui-assets")

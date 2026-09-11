@@ -134,3 +134,208 @@ export interface IngestionCluster {
     fixed_version?: string | null;
   };
 }
+
+// Analysis types
+export type AnalysisStatus =
+  | "queued"
+  | "running"
+  | "github_clone"
+  | "semgrep_scan"
+  | "docker_pull"
+  | "trivy_scan"
+  | "normalizing"
+  | "deduplicating"
+  | "correlating"
+  | "completed"
+  | "failed"
+  | "partial";
+
+export type ScannerStatus = "pending" | "running" | "completed" | "failed" | "skipped";
+
+export interface GitHubRepoInfo {
+  url: string;
+  owner: string;
+  name: string;
+  full_name: string;
+  commit_sha?: string | null;
+  branch?: string | null;
+  default_branch?: string | null;
+  size_kb?: number | null;
+}
+
+export interface DockerImageInfo {
+  image_ref: string;
+  repository: string;
+  tag: string;
+  digest?: string | null;
+  size_bytes?: number | null;
+  architecture?: string | null;
+  os?: string | null;
+}
+
+export interface ScannerExecution {
+  scanner: string;
+  version?: string | null;
+  status: ScannerStatus;
+  command: string[];
+  stdout: string;
+  stderr: string;
+  exit_code?: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_seconds?: number | null;
+  raw_output_path?: string | null;
+  findings_count: number;
+  error?: string | null;
+}
+
+export interface GitHubAcquisition {
+  clone_command: string[];
+  stdout: string;
+  stderr: string;
+  exit_code?: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_seconds?: number | null;
+  repository?: GitHubRepoInfo | null;
+  error?: string | null;
+}
+
+export interface DockerAcquisition {
+  pull_command: string[];
+  stdout: string;
+  stderr: string;
+  exit_code?: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_seconds?: number | null;
+  image?: DockerImageInfo | null;
+  error?: string | null;
+}
+
+export interface PipelineProcessing {
+  canonical_findings_count: number;
+  exact_duplicates_removed: number;
+  triple_tuple_duplicates_removed: number;
+  cross_tool_correlations: number;
+  incident_clusters_created: number;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_seconds?: number | null;
+  error?: string | null;
+}
+
+export interface AnalysisArtifacts {
+  metadata_path?: string | null;
+  github_acquisition_path?: string | null;
+  semgrep_stdout_path?: string | null;
+  semgrep_stderr_path?: string | null;
+  semgrep_raw_path?: string | null;
+  docker_pull_path?: string | null;
+  trivy_stdout_path?: string | null;
+  trivy_stderr_path?: string | null;
+  trivy_raw_path?: string | null;
+  canonical_findings_path?: string | null;
+  deduplication_path?: string | null;
+  correlations_path?: string | null;
+  incident_clusters_path?: string | null;
+  analysis_summary_path?: string | null;
+  final_report_path?: string | null;
+}
+
+export interface AnalysisMetadata {
+  analysis_id: string;
+  status: AnalysisStatus;
+  github_url?: string | null;
+  dockerhub_image?: string | null;
+  authorization: boolean;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_seconds?: number | null;
+  github?: GitHubAcquisition | null;
+  docker?: DockerAcquisition | null;
+  semgrep?: ScannerExecution | null;
+  trivy?: ScannerExecution | null;
+  pipeline?: PipelineProcessing | null;
+  artifacts?: AnalysisArtifacts | null;
+  error?: string | null;
+  partial_results: boolean;
+}
+
+export interface AnalysisCreateRequest {
+  github_url?: string | null;
+  dockerhub_image?: string | null;
+  authorization: boolean;
+}
+
+export interface AnalysisCreateResponse {
+  analysis_id: string;
+  status: AnalysisStatus;
+}
+
+export interface AnalysisStatusResponse {
+  analysis_id: string;
+  status: AnalysisStatus;
+  github_url?: string | null;
+  dockerhub_image?: string | null;
+  progress: Record<string, unknown>;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_seconds?: number | null;
+  error?: string | null;
+  partial_results: boolean;
+}
+
+export interface AnalysisLogsResponse {
+  analysis_id: string;
+  github_acquisition?: GitHubAcquisition | null;
+  semgrep?: ScannerExecution | null;
+  docker_pull?: DockerAcquisition | null;
+  trivy?: ScannerExecution | null;
+  pipeline?: PipelineProcessing | null;
+}
+
+export interface CanonicalFindingResponse {
+  finding_id: string;
+  tool_name: string;
+  scan_type: string;
+  title: string;
+  description: string;
+  cve_id?: string | null;
+  cwe_ids: string[];
+  raw_severity: string;
+  target_asset: string;
+  file_path?: string | null;
+  line_number?: number | null;
+  http_endpoint?: string | null;
+  http_method?: string | null;
+  package_name?: string | null;
+  installed_version?: string | null;
+  fixed_version?: string | null;
+}
+
+export interface AnalysisFindingsResponse {
+  analysis_id: string;
+  total_findings: number;
+  semgrep_findings: number;
+  trivy_findings: number;
+  findings: CanonicalFindingResponse[];
+}
+
+export interface AnalysisClustersResponse {
+  analysis_id: string;
+  total_clusters: number;
+  clusters: Record<string, unknown>[];
+}
+
+export interface AnalysisReportResponse {
+  analysis_id: string;
+  metadata: AnalysisMetadata;
+  summary: Record<string, unknown>;
+  scanner_summary: Record<string, unknown>;
+  finding_summary: Record<string, unknown>;
+  deduplication_summary: Record<string, unknown>;
+  correlation_summary: Record<string, unknown>;
+  incident_clusters: Record<string, unknown>[];
+}
