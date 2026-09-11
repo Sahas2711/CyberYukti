@@ -8,7 +8,7 @@ All routes operate on a single shared store seeded from fixtures and
 enriched with real ingestion + risk-engine output.
 """
 
-import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -21,10 +21,18 @@ from backend.app.store import init_store, get_pipeline_meta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_store()
+    yield
+
+
 app = FastAPI(
     title="CyberYukti API",
     description="Autonomous Vulnerability Triage & Evidence Engine (PS16)",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # CORS: explicit origins (fixes person1's wildcard + credentials combo)
@@ -35,11 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    init_store()
 
 
 @app.get("/")
