@@ -68,8 +68,9 @@ COPY backend/ ./backend/
 COPY services/ ./services/
 COPY run_cyberyukti.py ./
 
-# Packaged static UI from stage 1
-COPY --from=webbuilder /build/static-ui ./static-ui
+# Packaged static UI from stage 1 — main.py resolves it at
+# backend/app/main.py -> parent.parent / static-ui  ==  /app/backend/static-ui
+COPY --from=webbuilder /build/static-ui ./backend/static-ui
 
 # Build metadata (overwritten by CI with real values)
 ARG BUILD_VERSION=dev
