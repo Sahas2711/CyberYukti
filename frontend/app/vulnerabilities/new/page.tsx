@@ -109,7 +109,12 @@ Hardcoded JWT Secret in Auth Controller,HIGH,auth-service-prod:latest,,CWE-798,s
 Reflected XSS in User Activity Log,MEDIUM,customer-portal-frontend,,CWE-79,nuclei,/portal/activity
 `;
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL !== undefined
+    ? process.env.NEXT_PUBLIC_API_URL
+    : typeof window !== "undefined"
+    ? ""
+    : "http://127.0.0.1:8000";
 
 export default function NewVulnerabilityPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);

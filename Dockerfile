@@ -42,8 +42,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code, fixtures, and runners
+# Copy backend, services, fixtures, and runners
 COPY backend/ ./backend/
+COPY services/ ./services/
+COPY docs/ ./docs/
 COPY run_server.py run_standalone.py ./
 COPY docker-entrypoint.sh ./
 RUN chmod +x ./docker-entrypoint.sh
