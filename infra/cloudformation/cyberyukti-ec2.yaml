@@ -125,21 +125,21 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-          Description: HTTP (app published on 80 -> container 8000)
+          Description: HTTP to app
         - IpProtocol: tcp
           FromPort: 8000
           ToPort: 8000
           CidrIp: 0.0.0.0/0
-          Description: CyberYukti app (direct access for demo)
+          Description: CyberYukti app direct
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref SshCidr
-          Description: SSH for debugging (key-pair auth only)
+          Description: SSH debugging via key pair
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
-          Description: All outbound (docker pulls, SSM, scanners)
+          Description: All outbound
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-sg"
