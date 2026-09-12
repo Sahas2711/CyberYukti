@@ -22,11 +22,15 @@ HEALTH="FAIL"
 
 log() { echo "[ec2-deploy] $(date -u +%FT%TZ) $*"; }
 
-# 0. Docker must be present
+# 0. Docker + git must be present
 if ! command -v docker >/dev/null 2>&1; then
-  dnf install -y docker && systemctl enable --now docker
+  dnf install -y docker git curl && systemctl enable --now docker
 fi
 systemctl is-active --quiet docker || systemctl start docker
+if ! command -v git >/dev/null 2>&1; then
+  dnf install -y git
+fi
+command -v git >/dev/null 2>&1 || { echo "[ec2-deploy] ERROR: git not available" >&2; exit 1; }
 
 # 1. Checkout / update code
 if [ -d "$APP_DIR/.git" ]; then
