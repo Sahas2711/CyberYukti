@@ -41,7 +41,7 @@ CMD_ID=$(aws --region "$REGION" ssm send-command \
   --timeout-seconds 1800 \
   --parameters commands="[
     \"dnf install -y git curl >/dev/null 2>&1 || true\",
-    \"mkdir -p /opt && curl -fsSL https://raw.githubusercontent.com/Sahas2711/CyberYukti/\$BRANCH/scripts/ec2-deploy.sh -o /opt/ec2-deploy.sh && chmod +x /opt/ec2-deploy.sh\",
+    \"mkdir -p /opt && curl -fsSL https://raw.githubusercontent.com/Sahas2711/CyberYukti/${BRANCH}/scripts/ec2-deploy.sh -o /opt/ec2-deploy.sh && chmod +x /opt/ec2-deploy.sh\",
     \"BRANCH='$BRANCH' APP_PORT='$APP_PORT' /opt/ec2-deploy.sh\"
   ]" \
   --query "Command.CommandId" --output text)
