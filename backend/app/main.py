@@ -10,6 +10,7 @@ enriched with real ingestion + risk-engine output.
 
 from contextlib import asynccontextmanager
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -51,7 +52,14 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.on_event("startup")
+async def startup() -> None:
+    init_store()
+
+
+# Health endpoint lives at /api/health so the packaged static UI (mounted at
+# "/" when backend/static-ui exists) can own the root path.
+@app.get("/api/health")
 def read_root():
     """Health check and service status."""
     meta = get_pipeline_meta()
@@ -143,10 +151,10 @@ from backend.app.api.approval_routes import router as approval_router  # noqa: E
 from backend.app.api.ai_routes import router as ai_router  # noqa: E402
 from backend.app.api.audit_routes import router as audit_router  # noqa: E402
 from backend.app.api.dashboard_routes import router as dashboard_router  # noqa: E402
+from backend.app.analysis.routes import router as analysis_router  # noqa: E402
 from backend.app.api.bulk_routes import router as bulk_router  # noqa: E402
 from backend.app.api.attestation_routes import router as attestation_router  # noqa: E402
 from backend.app.api.chat_routes import router as chat_router  # noqa: E402
-
 app.include_router(case_router, prefix="/api/cases", tags=["cases"])
 app.include_router(approval_router, prefix="/api/cases", tags=["approvals"])
 app.include_router(attestation_router, prefix="/api/cases", tags=["attestation"])
@@ -155,21 +163,66 @@ app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
 app.include_router(chat_router, prefix="/api/ai", tags=["ai-chat"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(bulk_router, prefix="/api/v1/scan", tags=["bulk-ingestion"])
+app.include_router(analysis_router, prefix="", tags=["analyses"])
 
 # ---------------------------------------------------------------------------
 # Evidence Validation Engine (Person 2)
 # ---------------------------------------------------------------------------
-import sys
+import sys  # noqa: E402
+
 EE_PATH = BASE_DIR / "services" / "evidence-engine"
 if str(EE_PATH) not in sys.path:
     sys.path.insert(0, str(EE_PATH))
 
 try:
-    from api.server import app as evidence_engine_app
+    from api.server import app as evidence_engine_app  # noqa: E402
+
     app.mount("/api/evidence-engine", evidence_engine_app)
 except Exception:
     pass
 
+
+# ---------------------------------------------------------------------------
+# Packaged UI (Windows EXE / Docker) — optional static frontend serving
+# ---------------------------------------------------------------------------
+# The Next.js frontend can be built to static files (BUILD_STATIC_EXPORT=true)
+# and embedded next to the backend so ONE process serves both the UI and the
+# API on the same port. In normal development (repo checkout) this folder does
+# not exist and everything below is inert — dev workflow is unchanged.
+# NOTE: mounted LAST so it can never shadow the API routes above.
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
+
+_STATIC_UI_DIR = Path(__file__).resolve().parent.parent / "static-ui"
+
+
+def _build_info() -> Dict[str, Any]:
+    """Build metadata for release traceability (no secrets)."""
+    version_file = _STATIC_UI_DIR.parent / "VERSION.json"
+    info: Dict[str, Any] = {
+        "version": os.environ.get("CYBERYUKTI_VERSION", "dev"),
+        "commit_sha": os.environ.get("CYBERYUKTI_COMMIT_SHA", "unknown"),
+        "build_timestamp": os.environ.get("CYBERYUKTI_BUILD_TIMESTAMP", "unknown"),
+        "environment": os.environ.get("CYBERYUKTI_ENV", "development"),
+    }
+    if version_file.exists():
+        try:
+            info.update(json.loads(version_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return info
+
+
+if _STATIC_UI_DIR.is_dir():
+    # Version/build info endpoint (see README — build/release process).
+    @app.get("/api/build-info", include_in_schema=False)
+    def build_info() -> Dict[str, Any]:
+        return _build_info()
+
+    # Static assets first (/_next/*), then HTML page routes with clean URLs.
+    app.mount("/_next", StaticFiles(directory=_STATIC_UI_DIR / "_next"), name="ui-assets")
+    app.mount("/", StaticFiles(directory=_STATIC_UI_DIR, html=True), name="packaged-ui")
 
 if __name__ == "__main__":
     import uvicorn

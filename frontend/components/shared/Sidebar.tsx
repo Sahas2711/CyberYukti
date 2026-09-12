@@ -26,6 +26,21 @@ interface TriageStats {
 
 const SECTIONS: NavSection[] = [
   {
+    title: "Analysis",
+    items: [
+      {
+        href: "/analysis",
+        label: "New Analysis",
+        match: "exact",
+        icon: (active) => (
+          <svg width="16" height="16" className={`h-4 w-4 shrink-0 ${active ? "text-accent" : "text-tx-tertiary"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
     title: "Operations",
     items: [
       {
@@ -52,8 +67,7 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Triage & Cases",
-    items: [
+    title: "Triage & Cases",    items: [
       {
         href: "/cases",
         label: "All Triage Cases",
@@ -131,7 +145,7 @@ export function Sidebar() {
   }, [pathname]);
 
   function isActive(item: NavItem): boolean {
-    if (item.match === "exact") return pathname === "/";
+    if (item.match === "exact") return pathname === item.href;
     if (item.match === "vulnerabilities") return pathname.startsWith("/vulnerabilities");
     const onCases = pathname === "/cases";
     if (item.match === "priority")
@@ -142,7 +156,6 @@ export function Sidebar() {
       onCases && searchParams.get("priority") === null && searchParams.get("evidence") === null
     );
   }
-
   const total = stats.confirmed + stats.not_confirmed + stats.pending;
   const confirmedPct = total > 0 ? (stats.confirmed / total) * 100 : 50;
   const notConfirmedPct = total > 0 ? (stats.not_confirmed / total) * 100 : 10;

@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CyberYukti - minimal single-EC2 deployment (ap-south-1 friendly).
+  1 VPC, 1 public subnet, IGW, route table, security group, one t3.micro
+  EC2 instance running the sahasnagar/cyberyukti Docker image, an IAM
+  role with SSM Session Manager access (no SSH keys), and nothing else.
+  No NAT gateway, no ALB, no RDS, no ECS.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t2.micro, t4g.micro]
+    Description: Cheapest general-purpose instance (t3.micro default)
+
+  ContainerImage:
+    Type: String
+    Default: sahasnagar/cyberyukti:latest
+    Description: Docker image to run (CI pins an exact SHA tag at deploy time)
+
+  ContainerPort:
+    Type: Number
+    Default: 8000
+    Description: Port the container listens on (Dockerfile EXPOSE 8000)
+
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+
+  SubnetCidr:
+    Type: String
+    Default: 10.0.1.0/24
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: sahas-key-pair
+    Description: Existing EC2 key pair for emergency SSH debugging
+
+  SshCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR allowed to SSH (restrict to your IP in production)
+
+  DefaultBranch:
+    Type: String
+    Default: github-dockerhub-analysis
+    Description: Git branch the instance builds and deploys at bootstrap
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+  GitHubOrg:
+    Type: String
+    Default: Sahas2711
+
+  GitHubRepo:
+    Type: String
+    Default: CyberYukti
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-vpc"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-igw"
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SubnetCidr
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-public-1"
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rt"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: CyberYukti - allow HTTP from anywhere, no SSH (use SSM)
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP to app
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: CyberYukti app direct
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SshCidr
+          Description: SSH debugging via key pair
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-sg"
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "cyberyukti-ec2-role-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-role"
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref EC2Role]
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds: [!Ref InstanceSecurityGroup]
+      IamInstanceProfile: !Ref InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-cyberyukti"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -uxo pipefail
+          exec > /var/log/cyberyukti-bootstrap.log 2>&1
+
+          echo "=== CyberYukti bootstrap $(date -u +%FT%TZ) ==="
+
+          # 1. Base tools + swap (t3.micro has 2GB RAM; the frontend build
+          #    needs more, so add a 2G swapfile BEFORE building)
+          dnf install -y docker git curl
+          systemctl enable --now docker
+          usermod -aG docker ssm-user || true
+          if [ ! -f /swapfile ]; then
+            dd if=/dev/zero of=/swapfile bs=1M count=2048
+            chmod 600 /swapfile
+            mkswap /swapfile
+            swapon /swapfile
+            echo '/swapfile none swap sw 0 0' >> /etc/fstab
+          fi
+          free -h || true
+
+          # 2. Build & run from the GitHub repo (on-instance build).
+          #    The app exposes ONE port (EXPOSE 8000) - UI + API on the same
+          #    port (static UI served by FastAPI). No docker socket mount:
+          #    scanners (semgrep/trivy) run as subprocesses INSIDE the image.
+          #    Bootstrap deploys the DEFAULT_BRANCH; later deploys go through
+          #    scripts/update-ec2.sh (SSM) which reruns ec2-deploy.sh.
+          HEALTH=FAIL
+          mkdir -p /opt
+          curl -fsSL "https://raw.githubusercontent.com/${GitHubOrg}/${GitHubRepo}/${DefaultBranch}/scripts/ec2-deploy.sh" -o /opt/ec2-deploy.sh
+          chmod +x /opt/ec2-deploy.sh
+          BRANCH="${DefaultBranch}" APP_PORT="${ContainerPort}" /opt/ec2-deploy.sh
+
+          docker ps
+          docker logs --tail 50 cyberyukti || true
+          echo "=== bootstrap complete: http://<public-ip>/ ==="
+
+Outputs:
+  InstanceId:
+    Description: EC2 instance running CyberYukti (SSM-managed)
+    Value: !Ref EC2Instance
+
+  PublicIP:
+    Description: Public IP - open http://<ip>/ (UI) and http://<ip>/docs (API)
+    Value: !GetAtt EC2Instance.PublicIp
+
+  SSMCommand:
+    Description: Shell access without SSH
+    Value: !Sub "aws ssm start-session --target ${EC2Instance}"

@@ -1,119 +1,123 @@
 # CyberYukti 🛡️
 ### Autonomous Vulnerability Triage & Evidence Engine (PS16)
 
-> **Problem Statement PS16**: Build an autonomous triage and evidence engine that ingests high-volume, noisy outputs from heterogeneous security scanners, standardizes findings into canonical incident models, collapses alert duplicates using enterprise-grade triple-tuple standards, and correlates cross-tool evidence to surface high-priority, actionable vulnerabilities.
+Ingests noisy multi-scanner findings (Trivy / Semgrep / Nuclei), deduplicates them with a
+3-tier enterprise dedup engine, validates evidence, scores priority, explains findings with
+an AI analyst-assist layer, and records every decision in an append-only audit trail —
+served as **one web app** (Next.js UI + FastAPI API).
 
 ---
 
-## 👥 Hackathon Team & Person 1 Scope
+## 🚀 Run CyberYukti — pick ONE
 
-CyberYukti is divided across 4 specialized roles:
-- **Person 1 (This Repository)**: **Finding Intelligence & Deduplication Engine** (Multi-scanner normalization, GitLab Enterprise Triple-Tuple deduplication, and cross-tool SAST-to-DAST route correlation).
-- **Person 2**: **Context & Graph Engine** (Asset dependency graph, EPSS scoring, CISA KEV live catalog enrichment).
-- **Person 3**: **Autonomous Evidence Engine** (Dynamic exploitability verification, payload validation, evidence ledger).
-- **Person 4**: **Auto-Remediation & Response** (Automated patch generation, dependency bump PRs, mitigation playbooks).
+### OPTION 1 — Web / Development
 
----
+Requires: **Python 3.11+** and **Node 20+**.
 
-## 🧠 Person 1 Architecture: Finding Intelligence & Deduplication
-
-Modern AppSec pipelines suffer from extreme alert fatigue: container scanners flag the same base library across hundreds of layers, SAST tools report duplicate issues across minor line variations, and DAST tools hammer the same route with dozens of payloads.
-
-Person 1 solves this with a deterministic, multi-stage pipeline that collapses raw findings into high-fidelity **Incident Clusters** with **>85% noise reduction** (achieving **90.48%** in verified benchmarks).
-
-```mermaid
-flowchart TD
-    subgraph Multi-Scanner Ingestion
-        T[Trivy JSON<br/>SCA & Container] -->|TrivyParser| CF[CanonicalFinding Schema]
-        S[Semgrep JSON/SARIF<br/>SAST] -->|SemgrepParser| CF
-        N[Nuclei JSON/JSONL<br/>DAST] -->|NucleiParser| CF
-    end
-
-    subgraph 3-Stage Deduplication Engine
-        CF --> S1[Stage 1: Exact Hash Dedup<br/>Tool + Asset + Rule + Line/Target Hash]
-        S1 --> S2[Stage 2: GitLab Triple-Tuple Dedup<br/>Asset + Location Fingerprint + Identifier<br/>Strict Generic CWE Exclusion]
-        S2 --> S3[Stage 3: Cross-Tool SAST-DAST Correlation<br/>Route Match: Handler Path <-> HTTP Route]
-    end
-
-    subgraph Actionable Deliverables
-        S3 --> IC[IncidentCluster Objects]
-        S3 --> IS[IngestionSummary >85% Noise Reduction]
-        IC --> OUT[backend/fixtures/mock_output/verified_clusters.json]
-        IS --> CLI[Rich Terminal Dashboard]
-    end
-```
-
----
-
-## 🔑 Key Engineering Principles
-
-### 1. Canonical Schema (`backend/app/ingestion/models.py`)
-All heterogeneous scan formats (Trivy, Semgrep, Nuclei) are transformed into a single canonical Pydantic model:
-- `CanonicalFinding`: Contains unified fields (`finding_id`, `tool_name`, `scan_type`, `title`, `cve_id`, `cwe_ids`, `raw_severity`, `target_asset`, `file_path`, `line_number`, `http_endpoint`, `http_method`, `package_name`, `installed_version`, `fixed_version`, `raw_payload`).
-- `IncidentCluster`: Represents an aggregated, deduplicated vulnerability incident ready for downstream triage.
-- `IngestionSummary`: Quantifies raw alert volume vs. cluster count and computes noise reduction percentage.
-
-### 2. 3-Stage Deduplication Engine (`backend/app/ingestion/deduplicator.py`)
-- **Stage 1 (Exact Hash Deduplication)**: Eliminates identical alerts triggered by the same tool on identical coordinates.
-- **Stage 2 (GitLab Enterprise Triple-Tuple Standards)**:
-  - Groups by `[Asset Identifier] + [Location Fingerprint] + [Vulnerability Identifier]`.
-  - **Strict Rule on Generic CWEs**: Solitary generic CWEs (`CWE-79`, `CWE-22`, `CWE-89`, `CWE-20`, `CWE-200`, `CWE-287`) are strictly **forbidden** from grouping across different locations. Two distinct vulnerabilities only sharing "CWE-79" on different files remain isolated clusters.
-  - **SCA/Container**: Collapses multi-layer and multi-lockfile occurrences of the same package and CVE on the asset.
-  - **SAST**: Aggregates multi-line noise within the same component/rule.
-  - **DAST**: Groups parameter variations on the same normalized endpoint route.
-- **Stage 3 (Cross-Tool SAST-to-DAST Route Correlation)**:
-  - Connects static code controller files (`handlers/static.py`) serving endpoints (e.g. `/api/static/download`) with active runtime DAST findings hitting `/api/static/download`.
-  - Merges static flaw evidence and dynamic runtime proof into a unified cluster (`participating_tools: ["nuclei", "semgrep"]`).
-
----
-
-## 📊 Benchmark & Verification Results
-
-Running against synthetic, realistic multi-scanner scan fixtures:
-- **Trivy SCA/Container**: 25 raw findings (`aiohttp` CVE-2023-38606 across 15 targets + `libssl3` CVE-2023-0286 across 10 layers).
-- **Semgrep SAST**: 12 raw findings (8 path traversal lines in `handlers/static.py` + 4 auth checks in `admin/auth.py`).
-- **Nuclei DAST**: 5 raw findings (3 active path traversal payloads on `/api/static/download` + 2 auth bypass payloads on `/api/admin/auth`).
-
-```
-Total Raw Findings Ingested  : 42
-Actionable Incident Clusters : 4
-Noise Reduction Percentage   : 90.48% (Target: >85%)
-```
-
-### Triaged Clusters Output:
-1. **`CLUST-001`**: `[Correlated SAST+DAST] Path Traversal in /api/static/download (CVE-2023-38606)` (11 findings collapsed | Tools: `nuclei`, `semgrep`).
-2. **`CLUST-002`**: `[Correlated SAST+DAST] Improper Authentication in /api/admin/auth` (6 findings collapsed | Tools: `nuclei`, `semgrep`).
-3. **`CLUST-003`**: `[SCA] aiohttp: Directory traversal vulnerability in HTTP server static file handling (CVE-2023-38606)` (15 findings collapsed | Tools: `trivy`).
-4. **`CLUST-004`**: `[Container] openssl: X.400 address type confusion in GENERAL_NAME_cmp (CVE-2023-0286)` (10 findings collapsed | Tools: `trivy`).
-
----
-
-## 🚀 Getting Started
-
-### 1. Installation
-Ensure Python 3.10+ is installed, then install the dependencies:
 ```bash
-pip install -r requirements.txt
+# 1) Backend (API on http://localhost:8000, docs at /docs)
+pip install -r requirements.txt "httpx>=0.25.0" "python-dotenv>=1.0.0"
+python run_server.py
+
+# 2) Frontend (dev server on http://localhost:3000)
+cd frontend
+npm ci
+npm run dev
 ```
 
-### 2. Run Test Suite
-Run the comprehensive Pytest verification suite:
+Open **http://localhost:3000**. The frontend talks to the backend at
+`NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
+
+Run the test suites:
+
 ```bash
-python -m pytest backend/tests/test_ingestion.py -v
+python -m pytest backend/tests backend/app/ai/tests -v   # backend
+cd frontend && npm test                                  # frontend
 ```
 
-### 3. Run Standalone Pipeline
-Execute the end-to-end finding ingestion, deduplication, and export pipeline:
+### OPTION 2 — Windows EXE (no Python/Node needed)
+
+1. Download **`CyberYukti-Windows-x64.zip`** from the latest successful
+   **Build & Release** workflow run (Actions → Build & Release → artifacts), or from a
+   GitHub Release if one exists.
+2. Unzip and double-click **`CyberYukti-Windows-x64.exe`**.
+3. Open **http://localhost:8000** — the full UI and API run from that single file.
+4. Stop with `Ctrl+C` in the console window.
+
+> SmartScreen may warn about an unsigned binary — choose *More info → Run anyway*.
+> The EXE starts in **demo mode** (bundled demo data + offline mock AI). No internet,
+> keys, or installs required.
+
+### OPTION 3 — Docker
+
 ```bash
-python run_standalone.py
+docker pull ghcr.io/<owner>/cyberyukti:latest
+docker run --rm -p 8000:8000 ghcr.io/<owner>/cyberyukti:latest
 ```
-This prints the Rich summary tables and generates `backend/fixtures/mock_output/verified_clusters.json`.
+
+Open **http://localhost:8000** (UI + API on the same port). One image contains the
+complete application; the container is healthchecked and runs as a non-root user.
 
 ---
 
-## 🤝 Downstream Integration Contract (Persons 2, 3, 4)
+## 🧪 Demo mode
 
-The output JSON file `backend/fixtures/mock_output/verified_clusters.json` conforms to the canonical Pydantic model:
-- **Person 2 (Graph & Enrichment)**: Read `clusters[].primary_cve` to query EPSS scores and CISA KEV catalog; link `clusters[].affected_component` to the dependency graph.
-- **Person 3 (Evidence Engine)**: Inspect `clusters[].normalized_route` and `clusters[].representative_finding` to construct automated dynamic exploit verification scripts.
-- **Person 4 (Auto-Remediation)**: Use `clusters[].representative_finding.package_name` and `clusters[].representative_finding.fixed_version` to generate lockfile bump Pull Requests.
+All packaged formats (EXE, Docker) default to a **safe demo configuration**:
+
+| Behavior            | Default                                   |
+| ------------------- | ----------------------------------------- |
+| Frontend data       | Bundled demo cases (`NEXT_PUBLIC_USE_MOCK=true` baked into the packaged UI) |
+| AI analysis         | Offline mock provider (`USE_MOCK_AI=true`) |
+| Network             | No external calls, no API keys needed     |
+
+Real LLM analysis (optional): set `USE_MOCK_AI=false` plus `AI_PROVIDER=openai|anthropic`
+and the matching key (see `.env.example`). Keys are **never** committed.
+
+## ⚙️ Environment variables
+
+| Variable                | Default                 | Purpose                              |
+| ----------------------- | ----------------------- | ------------------------------------ |
+| `PORT`                  | `8000`                  | HTTP port (EXE & Docker)             |
+| `USE_MOCK_AI`           | `true`                  | Offline mock AI provider             |
+| `AI_PROVIDER`           | `openai`                | `openai` or `anthropic`              |
+| `OPENAI_API_KEY`        | —                       | Only when `USE_MOCK_AI=false`        |
+| `OPENAI_MODEL`          | `gpt-4o`                | OpenAI model                         |
+| `ANTHROPIC_API_KEY`     | —                       | Only when `USE_MOCK_AI=false`        |
+| `ANTHROPIC_MODEL`       | `claude-sonnet-4-…`     | Anthropic model                      |
+| `NEXT_PUBLIC_USE_MOCK`  | `true` (packaged UI)    | Frontend demo data source            |
+| `NEXT_PUBLIC_API_URL`   | `http://localhost:8000` | Backend URL for web/dev frontend     |
+
+Build metadata (commit SHA, timestamp, environment) is exposed by the packaged app at
+`/api/build-info` and printed at EXE startup.
+
+## 🔁 Build & release process
+
+`.github/workflows/build-release.yml` runs on every push/PR to `main`:
+
+```
+validate (ubuntu)      exe (windows-latest)         docker (ubuntu)
+├─ backend tests       ├─ static UI build           ├─ docker build (multi-stage)
+├─ frontend lint+test  ├─ PyInstaller one-file EXE  ├─ tags: latest + commit SHA
+├─ static web build    ├─ EXE launch smoke test     ├─ GHCR push (main only)
+└─ web build artifact  └─ CyberYukti-Windows-x64.zip└─ container smoke test
+```
+
+- **PRs**: validation + Docker build only (nothing published).
+- **Pushes to `main`**: everything builds; EXE, web build, and build metadata are
+  uploaded as artifacts; image is pushed to `ghcr.io/<owner>/cyberyukti`
+  (`latest` + SHA).
+- **Tags `v*`**: additionally creates a GitHub Release containing the Windows EXE.
+- Every job fails the workflow if lint, tests, builds, or smoke tests fail.
+
+## 🧱 Application architecture (unchanged)
+
+- **Backend** — FastAPI (`backend/app`): ingestion + 3-tier dedup, shared case store,
+  evidence validation, deterministic risk scoring (`services/risk_engine`), AI
+  analyst-assist (`backend/app/ai`), approvals, audit trail, dashboard stats.
+- **Frontend** — Next.js 14 App Router (`frontend/`): triage dashboard, case workspace,
+  approval controls, audit timeline. Talks to the API over HTTP; can also run fully
+  offline on bundled demo data.
+- **Packaging** — one process serves both: the UI is statically exported
+  (`BUILD_STATIC_EXPORT=true`) and embedded (`backend/static-ui/`), then served by the
+  same FastAPI app (`run_cyberyukti.py` → `dist/CyberYukti-Windows-x64.exe` or the
+  Docker image).

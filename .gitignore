@@ -37,6 +37,10 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# CyberYukti packaging build artifacts (recreated by CI)
+backend/static-ui/
+backend/VERSION.json
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -80,3 +84,5 @@ frontend/.next/
 *.tsbuildinfo
 *.log
 
+# CyberYukti runtime artifacts (recreated at runtime)
+backend/analyses/

@@ -11,7 +11,12 @@ interface BadgeProps {
     | "pending"
     | "approved"
     | "rejected"
-    | "overridden";
+    | "overridden"
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "destructive";
   children: React.ReactNode;
   className?: string;
 }
@@ -32,6 +37,11 @@ const variantStyles: Record<BadgeProps["variant"], string> = {
   approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
   rejected: "bg-red-500/10 text-red-400 border-red-500/30",
   overridden: "bg-violet-500/10 text-violet-400 border-violet-500/30",
+  primary: "bg-accent/15 text-accent border-accent/40",
+  secondary: "bg-graphite-panel text-tx-secondary border-line",
+  success: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40",
+  warning: "bg-amber-500/15 text-amber-400 border-amber-500/40",
+  destructive: "bg-red-500/15 text-red-400 border-red-500/40",
 };
 
 export function Badge({ variant, children, className = "" }: BadgeProps) {

@@ -6,6 +6,13 @@ import type {
   ApprovalState,
   IngestionCluster,
   IngestionSummary,
+  AnalysisCreateRequest,
+  AnalysisCreateResponse,
+  AnalysisStatusResponse,
+  AnalysisLogsResponse,
+  AnalysisFindingsResponse,
+  AnalysisClustersResponse,
+  AnalysisReportResponse,
 } from "./types";
 
 const FIXTURES: TriageCase[] = [
@@ -220,6 +227,14 @@ export interface Provider {
   getAudit(caseId: string): Promise<AuditEvent[]>;
   getDashboardStats(): Promise<DashboardStats>;
   getIngestion(): Promise<{ summary: IngestionSummary | null; clusters: IngestionCluster[] }>;
+
+  // Analysis methods
+  createAnalysis(request: AnalysisCreateRequest): Promise<AnalysisCreateResponse>;
+  getAnalysisStatus(analysisId: string): Promise<AnalysisStatusResponse>;
+  getAnalysisLogs(analysisId: string): Promise<AnalysisLogsResponse>;
+  getAnalysisFindings(analysisId: string): Promise<AnalysisFindingsResponse>;
+  getAnalysisClusters(analysisId: string): Promise<AnalysisClustersResponse>;
+  getAnalysisReport(analysisId: string): Promise<AnalysisReportResponse>;
 }
 
 const _cases: TriageCase[] = JSON.parse(JSON.stringify(FIXTURES)) as TriageCase[];
@@ -460,6 +475,30 @@ export function createMockProvider(): Provider {
 
     async getIngestion() {
       return { summary: null, clusters: [] };
+    },
+
+    async createAnalysis(_request: AnalysisCreateRequest): Promise<AnalysisCreateResponse> {
+      throw new Error("Analysis not available in mock mode. Use real API.");
+    },
+
+    async getAnalysisStatus(_analysisId: string): Promise<AnalysisStatusResponse> {
+      throw new Error("Analysis not available in mock mode. Use real API.");
+    },
+
+    async getAnalysisLogs(_analysisId: string): Promise<AnalysisLogsResponse> {
+      throw new Error("Analysis not available in mock mode. Use real API.");
+    },
+
+    async getAnalysisFindings(_analysisId: string): Promise<AnalysisFindingsResponse> {
+      throw new Error("Analysis not available in mock mode. Use real API.");
+    },
+
+    async getAnalysisClusters(_analysisId: string): Promise<AnalysisClustersResponse> {
+      throw new Error("Analysis not available in mock mode. Use real API.");
+    },
+
+    async getAnalysisReport(_analysisId: string): Promise<AnalysisReportResponse> {
+      throw new Error("Analysis not available in mock mode. Use real API.");
     },
   };
 }

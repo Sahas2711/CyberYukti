@@ -6,6 +6,13 @@ import type {
   DashboardStats,
   IngestionCluster,
   IngestionSummary,
+  AnalysisCreateRequest,
+  AnalysisCreateResponse,
+  AnalysisStatusResponse,
+  AnalysisLogsResponse,
+  AnalysisFindingsResponse,
+  AnalysisClustersResponse,
+  AnalysisReportResponse,
 } from "./types";
 import type { Provider } from "./mockProvider";
 
@@ -131,6 +138,57 @@ export function createRealProvider(): Provider {
         if (err instanceof ApiError && err.status === 404) {
           return { summary: null, clusters: [] };
         }
+        throw describeError(err);
+      }
+    },
+
+    async createAnalysis(request: AnalysisCreateRequest): Promise<AnalysisCreateResponse> {
+      try {
+        return await apiFetch<AnalysisCreateResponse>("/api/analyses", {
+          method: "POST",
+          body: JSON.stringify(request),
+        });
+      } catch (err) {
+        throw describeError(err);
+      }
+    },
+
+    async getAnalysisStatus(analysisId: string): Promise<AnalysisStatusResponse> {
+      try {
+        return await apiFetch<AnalysisStatusResponse>(`/api/analyses/${analysisId}`);
+      } catch (err) {
+        throw describeError(err);
+      }
+    },
+
+    async getAnalysisLogs(analysisId: string): Promise<AnalysisLogsResponse> {
+      try {
+        return await apiFetch<AnalysisLogsResponse>(`/api/analyses/${analysisId}/logs`);
+      } catch (err) {
+        throw describeError(err);
+      }
+    },
+
+    async getAnalysisFindings(analysisId: string): Promise<AnalysisFindingsResponse> {
+      try {
+        return await apiFetch<AnalysisFindingsResponse>(`/api/analyses/${analysisId}/findings`);
+      } catch (err) {
+        throw describeError(err);
+      }
+    },
+
+    async getAnalysisClusters(analysisId: string): Promise<AnalysisClustersResponse> {
+      try {
+        return await apiFetch<AnalysisClustersResponse>(`/api/analyses/${analysisId}/clusters`);
+      } catch (err) {
+        throw describeError(err);
+      }
+    },
+
+    async getAnalysisReport(analysisId: string): Promise<AnalysisReportResponse> {
+      try {
+        return await apiFetch<AnalysisReportResponse>(`/api/analyses/${analysisId}/report`);
+      } catch (err) {
         throw describeError(err);
       }
     },
